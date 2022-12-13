@@ -19,7 +19,7 @@ time_out        = None #Wait for message
 
 #Plotting
 plot_intv       = 200 #scalar defining update rate of figure (ms)
-num_samples_vis = buffer_length * sample_rate #Desired number of samples per signal (Just for visualization)
+s_down          = 5 #Desired downsampling factor (buffer_length*sample_rate/s_down must be convertable to integer)
 
 
 #Signal processing

@@ -1,14 +1,12 @@
 import json
-import keyboard
 import time
 import parameters                       as p
 import numpy                            as np
-from backend.Helment_signal_processing  import Processing
 from threading                          import Thread
 from datetime                           import datetime
 
 
-class Sampling(Processing):
+class Sampling():
 
     def __init__(self):
 
@@ -17,7 +15,7 @@ class Sampling(Processing):
         t0              = t0.replace(':', '_')
         file_name       = 'Helment ' + t0 + '.txt'
 
-        self.py_start   = round(time.perf_counter() * 1000, 4)
+        self.py_start   = round(time.perf_counter() * 1000, 0)
         self.pga        = p.PGA
 
         # Prepare data output
@@ -37,8 +35,6 @@ class Sampling(Processing):
         self.sample_rate        = p.sample_rate
 
         self.numchans   = p.buffer_channels
-
-        self.prepare_filters()
 
 
     def bin_to_voltage(self, bin):
@@ -61,13 +57,13 @@ class Sampling(Processing):
 
     def fetch_sample(self, pipe_conn, ser, cons, desired_con):
 
-        if desired_con == 2: # Bluetooth
+        if desired_con == 2: # USB
             ser.port        = cons["USB"]
             s_per_buffer    = 1
             print('USB')
-        elif desired_con == 3: # USB
+        elif desired_con == 3: # Bluetooth
             ser.port        = cons["BT"]
-            s_per_buffer    = 1 #10
+            s_per_buffer    = 10
             print('BT')
 
         # Open communication ----------------------------------------------
@@ -80,13 +76,14 @@ class Sampling(Processing):
 
         board_booting = True
         print('Board is booting up ...')
-        while board_booting and not keyboard.is_pressed('c'):
+        while board_booting:
             raw_message = str(ser.readline())
             if '{' in raw_message and '}' in raw_message:
                 print('Fully started')
                 board_booting = False
+
             
-        while not keyboard.is_pressed('c'): # Alternatively "while True:"
+        while True:
         
             raw_message = str(ser.readline())
 
@@ -115,18 +112,14 @@ class Sampling(Processing):
                 update_buffer   = np.concatenate((self.buffer, sample), axis=1)
 
                 # Current timestamp -------------------------------------------
-                time_stamp_now  = round(time.perf_counter() * 1000 - 
-                    self.py_start, 4)
+                time_stamp_now  = round(time.perf_counter() * 1000, 0) - self.py_start
                 time_stamps     = np.append(self.time_stamps, time_stamp_now)
 
                 # Build new buffer and timestamp arrays
                 self.buffer     = update_buffer[:, 1:]
                 self.time_stamps= time_stamps[1:]
 
-                # Filter buffer signal and send filtered data to plotting funcs
-                # -------------------------------------------------------------
-                processed_buffer = self.prepare_buffer()
-                pipe_conn.send(processed_buffer)
+                pipe_conn.send((self.buffer, time_stamp_now))
 
             # Write out samples to file -----------------------------------
             if self.sample_count == self.saving_interval:

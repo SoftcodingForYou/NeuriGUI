@@ -6,7 +6,8 @@ import numpy                        as np
 class Processing():
 
     def __init__(self):
-        pass
+
+        self.prepare_filters()
 
 
     def prepare_filters(self):
@@ -47,7 +48,25 @@ class Processing():
         return signal_filtered
 
 
-    def prepare_buffer(self):
+    def downsample(self, buffer, s_down):
+        # =================================================================
+        # Input:
+        #   buffer              Numpy array [channels x samples]
+        # Output:
+        #   downsamples_buffer  Numpy array of downsampled signal, same  
+        #                       dimensions as input buffer
+        # =================================================================
+
+        downsampled_signal  = np.zeros((buffer.shape[0], int(buffer.shape[1]/s_down)))
+        idx_retain = range(0, buffer.shape[1], s_down)
+        for iChan in range(self.numchans):
+            # downsampled_signal[iChan,] = scipy.signal.decimate(buffer[iChan,], s_down)
+            downsampled_signal[iChan,] = buffer[iChan,idx_retain]
+
+        return downsampled_signal
+
+
+    def prepare_buffer(self, buffer):
         # =================================================================
         # Input:
         #   buffer              Numpy array [channels x samples]
@@ -55,9 +74,9 @@ class Processing():
         #   filtered_buffer     Numpy array of filtered signal, same  
         #                       dimensions as input buffer
         # =================================================================
-        spike_free_signal   = np.zeros(self.buffer.shape)
-        noise_free_signal   = np.zeros(self.buffer.shape)
-        filtered_buffer     = np.zeros(self.buffer.shape)
+        spike_free_signal   = np.zeros(buffer.shape)
+        noise_free_signal   = np.zeros(buffer.shape)
+        filtered_buffer     = np.zeros(buffer.shape)
         for iChan in range(self.numchans):
 
             # Reject signal spikes (should only be apllied if necessary)
@@ -65,7 +84,7 @@ class Processing():
             # spike_free_signal[iChan,] = scipy.signal.medfilt(
             #     self.buffer[iChan,], kernel_size=3)
 
-            spike_free_signal[iChan,] = self.buffer[iChan,]
+            spike_free_signal[iChan,] = buffer[iChan,]
 
             # Reject ambiant electrical noise (at 50 Hz)
             # -------------------------------------------------------------

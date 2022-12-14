@@ -58,25 +58,28 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         # -----------------------------------------------------------------
         super(MainWindow, self).__init__(*args, **kwargs)
 
-        self.graphWidget = pg.PlotWidget()
-        # self.graphWidget.setDownsampling(ds=1000, mode='subsample')
+        self.graphWidget = PlotWidget()
         self.setCentralWidget(self.graphWidget)
 
         self.x = list(range(-self.numsamples, 0, self.s_down))
         self.x = [x/self.samplerate for x in self.x]
         self.y = [0 for _ in range(0, self.numsamples, self.s_down)]
 
-        self.graphWidget.setBackground('k')
+        self.graphWidget.setBackground('w')
         self.graphWidget.setYRange(p.yrange[0], p.yrange[1])
         self.graphWidget.setRange(yRange=(p.yrange[0], p.yrange[1]), disableAutoRange=True)
-        # self.graphWidget.plotItem.setDownsampling(ds=self.s_down, auto=False, mode='subsample') # Fluctuates too much
+        self.graphWidget.addLegend()
 
         # Decorate plot
         # -----------------------------------------------------------------
-        pen = pg.mkPen(color=(255, 255, 255), width=1)
-        self.data_line =  self.graphWidget.plot(self.x, self.y, name='Plot', pen=pen)
+        pen1 = pg.mkPen(color=(255, 0, 0), width=1)
+        pen2 = pg.mkPen(color=(0, 0, 255), width=1)
+        self.data_line = {}
+        self.data_line[0] =  self.graphWidget.plot(self.x, self.y, name='Channel 1', pen=pen1)
+        self.data_line[1] =  self.graphWidget.plot(self.x, self.y, name='Channel 2', pen=pen2)
         self.graphWidget.setLabel('left', 'Amplitude (uV)')
         self.graphWidget.setLabel('bottom', 'Time (s)')
+        
         self.graphWidget.setAntialiasing(False)
 
         self.timer = QtCore.QTimer()
@@ -101,14 +104,12 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         # -------------------------------------------------------------
         processed_buffer    = self.prepare_buffer(buffer)
 
-        for iChan in range(self.numchans):
-            # self.y          = self.y[1:]  # Remove the first y element
-            # self.y.append(processed_buffer[iChan,-1])
-            self.y = processed_buffer[iChan, self.idx_retain]
         self.x              = self.x[1:]  # Remove the first y element
         self.x.append(self.x[-1]+self.count/self.samplerate) # t_now/1000
-        
-        self.data_line.setData(self.x, self.y)  # Update the data
+
+        for iChan in range(self.numchans):
+            self.y = processed_buffer[iChan, self.idx_retain]
+            self.data_line[iChan].setData(self.x, self.y)  # Update the data
         self.count          = 0
 
 

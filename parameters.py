@@ -2,12 +2,13 @@
 HELMENTID       = '7&74D8485&0&24D7EBA4446A_C00000000' # The unique ID of the board (str)
 
 #Session-specific parameters
-yrange          = [-200, 200] # List of scalars ([negative, positive]) in order to set figure y axis range
+yrange          = [-1000, 1000] # List of scalars ([negative, positive]) in order to set figure y axis range
 
 #Signal arrays
 sample_rate     = 200 #Hertz
 buffer_channels = 2 #scalar
 buffer_length   = 10 #scalar (seconds)
+buffer_add      = 4 #scalar (seconds), we add this to the buffer for filtering to avoid edge artifacts
 sample_count    = 0 #integer zero
 saving_interval = 1 #scarlar (seconds)
 PGA             = 24 #scalar
@@ -26,4 +27,4 @@ s_down          = 5 #Desired downsampling factor (buffer_length*sample_rate/s_do
 filter_order    = 3 #scalar
 frequency_bands = {
     'LineNoise':    (46, 54),
-    'Whole':        (1, 45)}
+    'Whole':        (0.5, 45)}

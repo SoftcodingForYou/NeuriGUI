@@ -20,6 +20,7 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         # -----------------------------------------------------------------
         self.numchans       = p.buffer_channels
         self.numsamples     = int(p.sample_rate * p.buffer_length)
+        self.left_edge      = int(p.sample_rate * p.buffer_add)
         self.samplerate     = p.sample_rate
         self.count          = 0
         self.s_down         = p.s_down
@@ -103,6 +104,7 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         # Filter buffer signal and send filtered data to plotting funcs
         # -------------------------------------------------------------
         processed_buffer    = self.prepare_buffer(buffer)
+        processed_buffer    = processed_buffer[:, self.left_edge:]
 
         self.x              = self.x[1:]  # Remove the first y element
         self.x.append(self.x[-1]+self.count/self.samplerate) # t_now/1000

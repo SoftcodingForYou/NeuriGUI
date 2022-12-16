@@ -49,7 +49,7 @@ class CountMeLikeOneYourFrenchGirls:
             
             t_iteration     = round(time.perf_counter() * 1000, 4) # ms
             raw_message     = str(self.ser.readline())
-            print(raw_message)
+            # print(raw_message)
             i_sample        = i_sample + 1
 
             if t_iteration >= t_now + 1000:

@@ -25,11 +25,10 @@ class Processing():
         # -----------------------------------------------------------------
         default_pad     = 3 * max(len(self.a_wholerange), 
             len(self.b_wholerange))
-        if default_pad > p.buffer_length/10-1:
+        if default_pad > p.buffer_length * p.sample_rate/10-1:
             self.padlen = int(default_pad) # Scipy expects int
         else:
             self.padlen = int(p.buffer_length*p.sample_rate/10-1) # Scipy expects int
-        self.padlen = int(p.buffer_length*p.sample_rate-1)
 
 
     def filter_signal(self, signal, b, a):

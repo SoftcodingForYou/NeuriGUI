@@ -21,7 +21,7 @@ class Sampling():
         # Prepare data output
         self.output_file= file_name
         self.buffer     = np.zeros((p.buffer_channels, 
-            p.buffer_length * p.sample_rate))
+            (p.buffer_length + p.buffer_add) * p.sample_rate))
         self.time_stamps= np.zeros(p.buffer_length * p.sample_rate)
 
         with open(self.output_file, 'w', encoding= "utf_8") as file:

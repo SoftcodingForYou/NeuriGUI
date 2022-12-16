@@ -37,18 +37,20 @@ class Sampling():
         self.numchans   = p.buffer_channels
 
 
-    def bin_to_voltage(self, bin):
+    def bin_to_voltage(self, s_bin):
         # =================================================================
         # Convert binary into volts
         # =================================================================
-        #bin = int(bin) # requieres int
-
-        if bin == 0:
+        s_bin       = int(s_bin) # requieres int
+        sign_bit    = 0
+        if s_bin == 0:
             return 0
-        if bin > 0 and bin <= 8388607:
-            sign_bit = bin
-        elif bin > 8388607 and bin <= 2*8388607:
-            sign_bit = -2*8388607 + bin - 1
+        if s_bin > 0 and s_bin <= 8388607:
+            sign_bit = s_bin
+        elif s_bin > 8388607 and s_bin <= 2*8388607:
+            sign_bit = -2*8388607 + s_bin - 1
+        else:
+            print('sign_bit not assigned, returning 0')
         
         voltage = (4.5*sign_bit)/(self.pga*8388607.0)
         voltage = voltage * 1000000 # Convert to microvolts

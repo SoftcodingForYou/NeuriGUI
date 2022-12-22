@@ -67,7 +67,7 @@ class MainWindow(Processing):
         # -----------------------------------------------------------------
         self.master = Tk()
         self.master.title('EEG GUI')
-        self.master.geometry('1000x900')
+        self.master.geometry('1600x900')
 
         self.frame1 = Label(self.master, bg='#dddddd')
         self.frame1.grid(row=1, column=1)
@@ -85,55 +85,24 @@ class MainWindow(Processing):
         self.frame4.grid(row=2, column=1, columnspan=3)
         self.frame4 = LabelFrame(self.frame4, text='Data stream', padx=70, pady=70)
 
-        def selection(button):
-            choice = button.get()
-            choice = str(choice)
-            if choice == '50':
-                print('Enabled 50 Hz stopband filter')
-                m = '50'
-            elif choice == '60':
-                print('Enabled 60 Hz stopband filter')
-                m = '60'
-            elif choice == '0':
-                print('Notch filter disabled')
-                m = '0'
-            elif choice == 'whole':
-                print('Bandpass filter between 0.1 and 45 Hz')
-                m = '0.545'
-            elif choice == 'sleep':
-                print('Bandpass filter between 1 and 30 Hz')
-                m = '130'
-            elif choice == 'theta':
-                print('Bandpass filter between 4 and 8 Hz')
-                m = '48'
-            return m
-
-        def streamstate():
-            if stream.get() == 'Start':
-                stream.set('Stop')
-                streaming = False
-            elif stream.get() == 'Stop':
-                stream.set('Start')
-                streaming = True
-            return streaming
-
         # Define inputs from GUI elements
-        notch       = IntVar()
-        bpass       = StringVar()
-        stream      = StringVar()
-        stream.set('Start')
+        notch           = IntVar()
+        bpass           = StringVar()
+        self.stream     = StringVar()
+        self.stream.set('Stop')
+        self.streaming = True
 
-        Radiobutton(self.frame1, text='50 Hz', variable=notch, value=50,command=partial(selection, notch)).grid(row=1, column=1)
-        Radiobutton(self.frame1, text='60 Hz', variable=notch, value=60,command=partial(selection, notch)).grid(row=1, column=2)
-        Radiobutton(self.frame1, text='Off', variable=notch, value=0,command=partial(selection, notch)).grid(row=1, column=3)
+        Radiobutton(self.frame1, text='50 Hz', variable=notch, value=50,command=partial(self.selection, notch)).grid(row=1, column=1)
+        Radiobutton(self.frame1, text='60 Hz', variable=notch, value=60,command=partial(self.selection, notch)).grid(row=1, column=2)
+        Radiobutton(self.frame1, text='Off', variable=notch, value=0,command=partial(self.selection, notch)).grid(row=1, column=3)
         self.frame1.grid(row=1, columnspan=1, padx=90)
 
-        Radiobutton(self.frame2, text='0.5 - 45', variable=bpass, value='whole',command=partial(selection, bpass)).grid(row=1, column=1)
-        Radiobutton(self.frame2, text='1 - 30', variable=bpass, value='sleep',command=partial(selection, bpass)).grid(row=1, column=2)
-        Radiobutton(self.frame2, text='4 - 8', variable=bpass, value='theta',command=partial(selection, bpass)).grid(row=1, column=3)
+        Radiobutton(self.frame2, text='0.5 - 45', variable=bpass, value='whole',command=partial(self.selection, bpass)).grid(row=1, column=1)
+        Radiobutton(self.frame2, text='1 - 30', variable=bpass, value='sleep',command=partial(self.selection, bpass)).grid(row=1, column=2)
+        Radiobutton(self.frame2, text='4 - 8', variable=bpass, value='theta',command=partial(self.selection, bpass)).grid(row=1, column=3)
         self.frame2.grid(row=1, columnspan=1, padx=90)
 
-        btn = Button(self.frame3, textvariable=stream, command=streamstate).pack()
+        btn = Button(self.frame3, textvariable=self.stream, command=self.streamstate).pack()
         self.frame3.pack()
 
         self.x = list(range(-self.numsamples, 0, self.s_down))
@@ -200,9 +169,10 @@ class MainWindow(Processing):
             # Update plots for every channel
             # -------------------------------------------------------------
             for iChan in range(self.numchans):
-                self.y = processed_buffer[iChan, self.idx_retain]
-                sampleplot[iChan].set_ydata(self.y) # Y values
+                if self.streaming == True:
+                    self.y = processed_buffer[iChan, self.idx_retain]
 
+                sampleplot[iChan].set_ydata(self.y) # Y values
                 # re-render the artist, updating the canvas state, but not the screen
                 self.ax[iChan].draw_artist(sampleplot[iChan])
 
@@ -213,6 +183,38 @@ class MainWindow(Processing):
             # flush any pending GUI events, re-painting the screen if needed
             self.fig.canvas.flush_events()
             self.count          = 0
+
+
+    def selection(self, button):
+        choice = button.get()
+        choice = str(choice)
+        if choice == '50':
+            print('Enabled 50 Hz stopband filter')
+            m = '50'
+        elif choice == '60':
+            print('Enabled 60 Hz stopband filter')
+            m = '60'
+        elif choice == '0':
+            print('Notch filter disabled')
+            m = '0'
+        elif choice == 'whole':
+            print('Bandpass filter between 0.1 and 45 Hz')
+            m = '0.545'
+        elif choice == 'sleep':
+            print('Bandpass filter between 1 and 30 Hz')
+            m = '130'
+        elif choice == 'theta':
+            print('Bandpass filter between 4 and 8 Hz')
+            m = '48'
+        return m
+
+    def streamstate(self):
+        if self.stream.get() == 'Start':
+            self.stream.set('Stop')
+            self.streaming = True
+        elif self.stream.get() == 'Stop':
+            self.stream.set('Start')
+            self.streaming = False
 
 
 if __name__ == '__main__': # Necessary line for "multiprocessing" to work

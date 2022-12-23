@@ -27,4 +27,7 @@ s_down          = 5 #Desired downsampling factor (buffer_length*sample_rate/s_do
 filter_order    = 3 #scalar
 frequency_bands = {
     'LineNoise':    (46, 54),
+    'LineNoise60':  (56, 64),
+    'Sleep':        (1, 30),
+    'Theta':        (4, 8),
     'Whole':        (1, 40)}

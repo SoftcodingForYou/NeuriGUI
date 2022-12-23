@@ -1,4 +1,5 @@
 from tkinter                                import *
+from tkinter                                import messagebox
 from functools                              import partial
 from pyqtgraph                              import PlotWidget, plot
 import matplotlib
@@ -22,6 +23,8 @@ class MainWindow(Processing):
 
     def __init__(self):
 
+        super(MainWindow, self).__init__()
+
         # Load parameters
         # -----------------------------------------------------------------
         self.numchans       = p.buffer_channels
@@ -38,7 +41,6 @@ class MainWindow(Processing):
         ParamVal()                              # Sanity checks
         confboard           = ConfigureBoard()  # Board communication
         sigproc             = Sampling()        # Signal handling
-        Processing()
 
         # Listen to user input for setting state of board
         # -----------------------------------------------------------------
@@ -90,7 +92,11 @@ class MainWindow(Processing):
         bpass           = StringVar()
         self.stream     = StringVar()
         self.stream.set('Stop')
-        self.streaming = True
+        self.streaming  = True
+        self.bSB        = self.b_notch
+        self.aSB        = self.a_notch
+        self.bPB        = self.b_wholerange
+        self.aPB        = self.a_wholerange
 
         Radiobutton(self.frame1, text='50 Hz', variable=notch, value=50,command=partial(self.selection, notch)).grid(row=1, column=1)
         Radiobutton(self.frame1, text='60 Hz', variable=notch, value=60,command=partial(self.selection, notch)).grid(row=1, column=2)
@@ -107,7 +113,9 @@ class MainWindow(Processing):
 
         self.x = list(range(-self.numsamples, 0, self.s_down))
         self.x = [x/self.samplerate for x in self.x]
-        self.y = [0 for _ in range(0, self.numsamples, self.s_down)]
+        self.y = []
+        for _ in range(self.numchans):
+            self.y.append([0 for _ in range(0, self.numsamples, self.s_down)])
 
         self.fig, self.ax   = plt.subplots(self.numchans, 1,
             figsize=(15, 8), dpi=80)
@@ -122,18 +130,24 @@ class MainWindow(Processing):
 
     def update_plot_data(self):
 
-        sampleplot     = {}
+        sampleplot      = {}
         for iChan in range(self.numchans):
             if iChan == 0:
                 self.ax[iChan].set_title('Helment')
             elif iChan == self.numchans - 1:
                 self.ax[iChan].set_xlabel('Time (s)')
-            sampleplot[iChan], = self.ax[iChan].plot(self.x, self.y)
+            sampleplot[iChan], = self.ax[iChan].plot(self.x, self.y[iChan])
             self.ax[iChan].set_ylabel('Amp. (uV)')
             self.ax[iChan].set_ylim(
-                    bottom = self.yrange[0],
-                    top = self.yrange[1],
-                    emit = False, auto = False)
+                bottom = self.yrange[0],
+                top = self.yrange[1],
+                emit = False, auto = False)
+            self.ax[iChan].set_xticks(
+                range(int(round(self.x[0], 0)), 
+                int(round(self.x[-1]+1, 0)), 1))
+            # self.ax[iChan].set_xticklabels([])
+            self.ax[iChan].set_xmargin(0) # Expand signal to vertical edges
+            self.ax[iChan].grid(visible=1, which='major', axis='both', linestyle=':', alpha=0.5)
         plt.show(block=False)
         plt.pause(1)
 
@@ -147,7 +161,9 @@ class MainWindow(Processing):
         # renderer to the GUI framework so you can see it
         self.fig.canvas.blit(self.fig.bbox)
 
-        while True: # Update plots for every channel
+        plt.close() # Closes unnecessary window
+
+        while not self.recv_conn.closed: # Update plots for every channel
             # -----------------------------------------------------------------
             buffer, t_now   = self.recv_conn.recv()
 
@@ -157,8 +173,9 @@ class MainWindow(Processing):
 
             # Filter buffer signal and send filtered data to plotting funcs
             # -------------------------------------------------------------
-            # processed_buffer    = self.prepare_buffer(buffer)
-            processed_buffer    = buffer[:, self.left_edge:]
+            processed_buffer    = self.prepare_buffer(buffer, 
+                self.bSB, self.aSB, self.bPB, self.aPB)
+            processed_buffer    = processed_buffer[:, self.left_edge:]
 
             self.x              = self.x[1:]  # Remove the first y element
             self.x.append(self.x[-1]+self.count/self.samplerate) # t_now/1000
@@ -170,9 +187,9 @@ class MainWindow(Processing):
             # -------------------------------------------------------------
             for iChan in range(self.numchans):
                 if self.streaming == True:
-                    self.y = processed_buffer[iChan, self.idx_retain]
+                    self.y[iChan] = processed_buffer[iChan, self.idx_retain]
 
-                sampleplot[iChan].set_ydata(self.y) # Y values
+                sampleplot[iChan].set_ydata(self.y[iChan]) # Y values
                 # re-render the artist, updating the canvas state, but not the screen
                 self.ax[iChan].draw_artist(sampleplot[iChan])
 
@@ -190,23 +207,29 @@ class MainWindow(Processing):
         choice = str(choice)
         if choice == '50':
             print('Enabled 50 Hz stopband filter')
-            m = '50'
+            self.bSB    = self.b_notch
+            self.aSB    = self.a_notch
         elif choice == '60':
             print('Enabled 60 Hz stopband filter')
-            m = '60'
+            self.bSB    = self.b_notch60
+            self.aSB    = self.a_notch60
         elif choice == '0':
             print('Notch filter disabled')
-            m = '0'
+            self.bSB    = np.array([None, None]) # Avoiding bool not iterable
+            self.aSB    = np.array([None, None])
         elif choice == 'whole':
             print('Bandpass filter between 0.1 and 45 Hz')
-            m = '0.545'
+            self.bPB        = self.b_wholerange
+            self.aPB        = self.a_wholerange
         elif choice == 'sleep':
             print('Bandpass filter between 1 and 30 Hz')
-            m = '130'
+            self.bPB        = self.b_sleep
+            self.aPB        = self.a_sleep
         elif choice == 'theta':
             print('Bandpass filter between 4 and 8 Hz')
-            m = '48'
-        return m
+            self.bPB        = self.b_theta
+            self.aPB        = self.a_theta
+
 
     def streamstate(self):
         if self.stream.get() == 'Start':
@@ -217,7 +240,11 @@ class MainWindow(Processing):
             self.streaming = False
 
 
+    def on_closing(self):
+        if messagebox.askokcancel("Quit", "Do you want to quit?"):
+            self.master.destroy()
+
+
 if __name__ == '__main__': # Necessary line for "multiprocessing" to work
     
     sigplots                = MainWindow()  # Contains all necessary bits
-    mainloop()

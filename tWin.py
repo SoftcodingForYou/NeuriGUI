@@ -1,22 +1,18 @@
-from tkinter                                import *
-from tkinter                                import messagebox
-from functools                              import partial
-from pyqtgraph                              import PlotWidget, plot
-import matplotlib
-matplotlib.use('TkAgg')
-
-from matplotlib.backends.backend_tkagg      import FigureCanvasTkAgg
-import matplotlib.pyplot                    as plt
-import numpy                                as np
-
-
 #Prepare userland =========================================================
-import parameters                           as p
 from backend.Helment_signal_processing      import Processing
 from backend.Helment_configure_board        import ConfigureBoard
 from backend.Helment_signal_sampling        import Sampling
 from backend.Helment_parameter_validation   import ParamVal
 from multiprocessing                        import Process, Pipe
+from tkinter                                import *
+from tkinter                                import messagebox
+from functools                              import partial
+import matplotlib
+matplotlib.use('TkAgg')
+from matplotlib.backends.backend_tkagg      import FigureCanvasTkAgg
+import matplotlib.pyplot                    as plt
+import numpy                                as np
+import parameters                           as p
 
 
 class MainWindow(Processing):
@@ -125,34 +121,42 @@ class MainWindow(Processing):
         plot_widget.grid(row=2, column=0)
         self.frame4.grid(row=0, column=0, columnspan=3)
 
-        self.update_plot_data()
+        self.update_plot_data(canvas)
 
 
-    def update_plot_data(self):
+    def update_plot_data(self, canvas):
 
         sampleplot      = {}
         for iChan in range(self.numchans):
             if iChan == 0:
-                self.ax[iChan].set_title('Helment')
-            elif iChan == self.numchans - 1:
-                self.ax[iChan].set_xlabel('Time (s)')
-            sampleplot[iChan], = self.ax[iChan].plot(self.x, self.y[iChan])
+                self.ax[iChan].set_title('Time (s)')
+            sampleplot[iChan], = self.ax[iChan].plot(
+                self.y[iChan], linestyle='None', animated=True)
             self.ax[iChan].set_ylabel('Amp. (uV)')
             self.ax[iChan].set_ylim(
                 bottom = self.yrange[0],
                 top = self.yrange[1],
                 emit = False, auto = False)
-            self.ax[iChan].set_xticks(
-                range(int(round(self.x[0], 0)), 
-                int(round(self.x[-1]+1, 0)), 1))
-            # self.ax[iChan].set_xticklabels([])
+
+            x0          = self.x[0]
+            xend        = self.x[-1]
+            xrange      = range(int(round(x0, 0)), int(round(xend, 0)), 1)
+            self.ax[iChan].set_xticks([])
+            self.ax[iChan].set_xlim((x0, xend))
             self.ax[iChan].set_xmargin(0) # Expand signal to vertical edges
-            self.ax[iChan].grid(visible=1, which='major', axis='both', linestyle=':', alpha=0.5)
-        plt.show(block=False)
-        plt.pause(1)
+            self.ax[iChan].grid(visible=1, which='major', axis='both', 
+                linestyle=':', alpha=0.5)
+
+        # Redraw changing elements of figure
+        for iChan in range(self.numchans):
+            sampleplot[iChan].set_linestyle('-')
+            # self.ax[iChan].set_xticks(xrange)
+            # self.ax[iChan].set_xticklabels(xrange)
+        canvas.draw()
 
         # get copy of entire figure (everything inside fig.bbox) sans animated artist
         bg = self.fig.canvas.copy_from_bbox(self.fig.bbox)
+
         # draw the animated artist, this uses a cached renderer
         for iChan in range(self.numchans):
             self.ax[iChan].draw_artist(sampleplot[iChan])
@@ -161,10 +165,8 @@ class MainWindow(Processing):
         # renderer to the GUI framework so you can see it
         self.fig.canvas.blit(self.fig.bbox)
 
-        plt.close() # Closes unnecessary window
-
         while not self.recv_conn.closed: # Update plots for every channel
-            # -----------------------------------------------------------------
+
             buffer, t_now   = self.recv_conn.recv()
 
             self.count = self.count + 1
@@ -177,8 +179,14 @@ class MainWindow(Processing):
                 self.bSB, self.aSB, self.bPB, self.aPB)
             processed_buffer    = processed_buffer[:, self.left_edge:]
 
-            self.x              = self.x[1:]  # Remove the first y element
+            self.x          = self.x[1:]  # Remove the first y element
             self.x.append(self.x[-1]+self.count/self.samplerate) # t_now/1000
+
+            if self.streaming == True:
+                xdata           = self.x
+                x0              = xdata[0]
+                xend            = xdata[-1]
+                xrange          = range(int(round(x0-1, 0)), int(round(xend+1, 0)), 1)
             
             # reset the background back in the canvas state, screen unchanged
             self.fig.canvas.restore_region(bg)
@@ -190,8 +198,17 @@ class MainWindow(Processing):
                     self.y[iChan] = processed_buffer[iChan, self.idx_retain]
 
                 sampleplot[iChan].set_ydata(self.y[iChan]) # Y values
+
+                # Move x axis the friendly way
+                sampleplot[iChan].set_xdata(xdata)
+                self.ax[iChan].set_xticks(xrange)
+                self.ax[iChan].set_xticklabels(xrange)
+                self.ax[iChan].set_xlim((x0, xend))
+
                 # re-render the artist, updating the canvas state, but not the screen
                 self.ax[iChan].draw_artist(sampleplot[iChan])
+                # The below line updates the x-axis but is slowing down the code a lot
+                self.ax[iChan].draw_artist(self.ax[iChan])
 
             # Update plot time stamp and figure
             # -------------------------------------------------------------

@@ -11,6 +11,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg      import FigureCanvasTkAgg
 import matplotlib.pyplot                    as plt
+from PIL                                    import Image, ImageTk
 import numpy                                as np
 import parameters                           as p
 
@@ -31,6 +32,8 @@ class MainWindow(Processing):
         self.s_down         = p.s_down
         self.idx_retain     = range(0, int(p.sample_rate * p.buffer_length), p.s_down)
         self.yrange         = p.yrange
+
+        self.img_helment    = './backend/Isotipo-Helment-color.png'
 
         # Load methods
         # -----------------------------------------------------------------
@@ -64,28 +67,50 @@ class MainWindow(Processing):
         # Build GUI
         # -----------------------------------------------------------------
         self.master = Tk()
-        self.master.title('EEG GUI')
+        self.master.title('Helment EEG GUI')
         self.master.geometry('1600x900')
+        self.master.iconphoto(False, PhotoImage(file=self.img_helment))
+        self.master.lift()
+        self.master.attributes("-topmost", True)
+        self.master.after_idle(self.master.attributes, '-topmost', False)
+        
+        #multiple image size by zoom
+        pixels_x, pixels_y = tuple([int(0.01 * x)  for x in Image.open(self.img_helment).size])
+        img = ImageTk.PhotoImage(Image.open(self.img_helment).resize((pixels_x, pixels_y)))
+        self.frameLogo = Label(self.master, image=img, bg='#dddddd')
+        self.frameLogo.image = img
+        self.frameLogo.grid(row=1, column=1)
+        self.frameLogo = LabelFrame(self.frameLogo, text='Logo',
+            padx=10, pady=10)
+                    
+        self.frameYRange = Label(self.master, bg='#dddddd')
+        self.frameYRange.grid(row=1, column=2)
+        self.frameYRange = LabelFrame(self.frameYRange, text='Vert. range (uV)',
+            padx=10, pady=10)
 
-        self.frame1 = Label(self.master, bg='#dddddd')
-        self.frame1.grid(row=1, column=1)
-        self.frame1 = LabelFrame(self.frame1, text='Notch filter', padx=30, pady=10)
+        self.frameNotch = Label(self.master, bg='#dddddd')
+        self.frameNotch.grid(row=1, column=3)
+        self.frameNotch = LabelFrame(self.frameNotch, text='Notch filter',
+            padx=10, pady=10)
 
-        self.frame2 = Label(self.master, bg='#dddddd')
-        self.frame2.grid(row=1, column=2)
-        self.frame2 = LabelFrame(self.frame2, text='Bandpass (Hz)', padx=30, pady=10)
+        self.frameBandpass = Label(self.master, bg='#dddddd')
+        self.frameBandpass.grid(row=1, column=4)
+        self.frameBandpass = LabelFrame(self.frameBandpass, text='Bandpass (Hz)',
+            padx=10, pady=10)
 
-        self.frame3 = Label(self.master, bg='#dddddd')
-        self.frame3.grid(row=1, column=3)
-        self.frame3 = LabelFrame(self.frame3, text='Start/Stop data stream', padx=10, pady=10)
+        self.frameStream = Label(self.master, bg='#dddddd')
+        self.frameStream.grid(row=1, column=5)
+        self.frameStream = LabelFrame(self.frameStream, text='Start/Stop data stream',
+            padx=10, pady=10)
 
-        self.frame4 = Label(self.master, bg='#dddddd')
-        self.frame4.grid(row=2, column=1, columnspan=3)
-        self.frame4 = LabelFrame(self.frame4, text='Data stream', padx=70, pady=70)
+        self.frameSignal = Label(self.master, bg='#dddddd')
+        self.frameSignal.grid(row=2, column=1, columnspan=5)
+        self.frameSignal = LabelFrame(self.frameSignal, text='Data stream', padx=70, pady=70)
 
         # Define inputs from GUI elements
         notch           = IntVar()
         bpass           = StringVar()
+        yran            = StringVar()
         self.stream     = StringVar()
         self.stream.set('Stop')
         self.streaming  = True
@@ -94,18 +119,44 @@ class MainWindow(Processing):
         self.bPB        = self.b_wholerange
         self.aPB        = self.a_wholerange
 
-        Radiobutton(self.frame1, text='50 Hz', variable=notch, value=50,command=partial(self.selection, notch)).grid(row=1, column=1)
-        Radiobutton(self.frame1, text='60 Hz', variable=notch, value=60,command=partial(self.selection, notch)).grid(row=1, column=2)
-        Radiobutton(self.frame1, text='Off', variable=notch, value=0,command=partial(self.selection, notch)).grid(row=1, column=3)
-        self.frame1.grid(row=1, columnspan=1, padx=90)
+        Radiobutton(self.frameYRange, text='100',
+            variable=yran, value=100,
+            command=partial(self.yrange_selection, yran)).grid(row=1, column=1)
+        Radiobutton(self.frameYRange, text='200',
+            variable=yran, value=200,
+            command=partial(self.yrange_selection, yran)).grid(row=1, column=2)
+        Radiobutton(self.frameYRange, text='500',
+            variable=yran, value=500,
+            command=partial(self.yrange_selection, yran)).grid(row=1, column=3)
+        Radiobutton(self.frameYRange, text='1000',
+            variable=yran, value=1000,
+            command=partial(self.yrange_selection, yran)).grid(row=1, column=4)
+        self.frameYRange.grid(row=1, columnspan=1, padx=90)
 
-        Radiobutton(self.frame2, text='0.5 - 45', variable=bpass, value='whole',command=partial(self.selection, bpass)).grid(row=1, column=1)
-        Radiobutton(self.frame2, text='1 - 30', variable=bpass, value='sleep',command=partial(self.selection, bpass)).grid(row=1, column=2)
-        Radiobutton(self.frame2, text='4 - 8', variable=bpass, value='theta',command=partial(self.selection, bpass)).grid(row=1, column=3)
-        self.frame2.grid(row=1, columnspan=1, padx=90)
+        Radiobutton(self.frameNotch, text='50 Hz',
+            variable=notch, value=50,
+            command=partial(self.filt_selection, notch)).grid(row=1, column=1)
+        Radiobutton(self.frameNotch, text='60 Hz',
+            variable=notch, value=60,
+            command=partial(self.filt_selection, notch)).grid(row=1, column=2)
+        Radiobutton(self.frameNotch, text='Off',
+            variable=notch, value=0,
+            command=partial(self.filt_selection, notch)).grid(row=1, column=3)
+        self.frameNotch.grid(row=1, columnspan=1, padx=90)
 
-        btn = Button(self.frame3, textvariable=self.stream, command=self.streamstate).pack()
-        self.frame3.pack()
+        Radiobutton(self.frameBandpass, text='0.5 - 45', 
+            variable=bpass, value='whole',
+            command=partial(self.filt_selection, bpass)).grid(row=1, column=1)
+        Radiobutton(self.frameBandpass, text='1 - 30',
+            variable=bpass, value='sleep',
+            command=partial(self.filt_selection, bpass)).grid(row=1, column=2)
+        Radiobutton(self.frameBandpass, text='4 - 8',
+            variable=bpass, value='theta',
+            command=partial(self.filt_selection, bpass)).grid(row=1, column=3)
+        self.frameBandpass.grid(row=1, columnspan=1, padx=90)
+
+        Button(self.frameStream, textvariable=self.stream, command=self.streamstate).pack()
+        self.frameStream.pack()
 
         self.x = list(range(-self.numsamples, 0, self.s_down))
         self.x = [x/self.samplerate for x in self.x]
@@ -116,10 +167,10 @@ class MainWindow(Processing):
         self.fig, self.ax   = plt.subplots(self.numchans, 1,
             figsize=(15, 8), dpi=80)
 
-        canvas = FigureCanvasTkAgg(self.fig, master=self.frame4)
+        canvas = FigureCanvasTkAgg(self.fig, master=self.frameSignal)
         plot_widget = canvas.get_tk_widget()
-        plot_widget.grid(row=2, column=0)
-        self.frame4.grid(row=0, column=0, columnspan=3)
+        plot_widget.grid(row=0, column=0)
+        self.frameSignal.grid(row=0, column=0, columnspan=5)
 
         self.update_plot_data(canvas)
 
@@ -131,27 +182,37 @@ class MainWindow(Processing):
             if iChan == 0:
                 self.ax[iChan].set_title('Time (s)')
             sampleplot[iChan], = self.ax[iChan].plot(
-                self.y[iChan], linestyle='None', animated=True)
+                self.x, self.y[iChan], linestyle='None', animated=True)
             self.ax[iChan].set_ylabel('Amp. (uV)')
             self.ax[iChan].set_ylim(
                 bottom = self.yrange[0],
                 top = self.yrange[1],
                 emit = False, auto = False)
+            self.ax[iChan].set_ymargin(0) # Expand signal to vertical edges
 
             x0          = self.x[0]
             xend        = self.x[-1]
             xrange      = range(int(round(x0, 0)), int(round(xend, 0)), 1)
             self.ax[iChan].set_xticks([])
             self.ax[iChan].set_xlim((x0, xend))
-            self.ax[iChan].set_xmargin(0) # Expand signal to vertical edges
+            self.ax[iChan].set_xmargin(0) # Expand signal to horizontal edges
             self.ax[iChan].grid(visible=1, which='major', axis='both', 
                 linestyle=':', alpha=0.5)
 
-        # Redraw changing elements of figure
         for iChan in range(self.numchans):
             sampleplot[iChan].set_linestyle('-')
-            # self.ax[iChan].set_xticks(xrange)
-            # self.ax[iChan].set_xticklabels(xrange)
+            self.ax[iChan].set_xticks(xrange)
+            if iChan == self.numchans-1:
+                self.ax[iChan].set_xticklabels(xrange)
+            else:
+                self.ax[iChan].set_xticklabels([])
+            self.ax[iChan].set_yticks([
+                self.yrange[0],
+                self.yrange[0]/2,
+                0,
+                self.yrange[1]/2,
+                self.yrange[1]])
+            self.ax[iChan].set_yticklabels([])
         canvas.draw()
 
         # get copy of entire figure (everything inside fig.bbox) sans animated artist
@@ -186,7 +247,7 @@ class MainWindow(Processing):
                 xdata           = self.x
                 x0              = xdata[0]
                 xend            = xdata[-1]
-                xrange          = range(int(round(x0-1, 0)), int(round(xend+1, 0)), 1)
+                xrange          = range(int(round(x0, 0)), int(round(xend, 0)), 1)
             
             # reset the background back in the canvas state, screen unchanged
             self.fig.canvas.restore_region(bg)
@@ -202,13 +263,17 @@ class MainWindow(Processing):
                 # Move x axis the friendly way
                 sampleplot[iChan].set_xdata(xdata)
                 self.ax[iChan].set_xticks(xrange)
-                self.ax[iChan].set_xticklabels(xrange)
+                if iChan == self.numchans-1:
+                    self.ax[iChan].set_xticklabels(xrange)
                 self.ax[iChan].set_xlim((x0, xend))
+
+                # Set vertical range
+                self.ax[iChan].set_ylim(self.yrange)
 
                 # re-render the artist, updating the canvas state, but not the screen
                 self.ax[iChan].draw_artist(sampleplot[iChan])
                 # The below line updates the x-axis but is slowing down the code a lot
-                self.ax[iChan].draw_artist(self.ax[iChan])
+                # self.ax[iChan].draw_artist(self.ax[iChan])
 
             # Update plot time stamp and figure
             # -------------------------------------------------------------
@@ -219,7 +284,7 @@ class MainWindow(Processing):
             self.count          = 0
 
 
-    def selection(self, button):
+    def filt_selection(self, button):
         choice = button.get()
         choice = str(choice)
         if choice == '50':
@@ -248,6 +313,23 @@ class MainWindow(Processing):
             self.aPB        = self.a_theta
 
 
+    def yrange_selection(self, button):
+        choice = button.get()
+        choice = str(choice)
+        if choice == '100':
+            print('Vertical range set to -100 uV to +100 uV')
+            self.yrange = (-100, 100)
+        elif choice == '200':
+            print('Vertical range set to -200 uV to +200 uV')
+            self.yrange = (-200, 200)
+        elif choice == '500':
+            print('Vertical range set to -500 uV to +500 uV')
+            self.yrange = (-500, 500)
+        elif choice == '1000':
+            print('Vertical range set to -1000 uV to +1000 uV')
+            self.yrange = (-1000, 1000)
+
+
     def streamstate(self):
         if self.stream.get() == 'Start':
             self.stream.set('Stop')
@@ -258,6 +340,7 @@ class MainWindow(Processing):
 
 
     def on_closing(self):
+        # Currently not working for unknown reason
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
             self.master.destroy()
 

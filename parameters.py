@@ -2,7 +2,7 @@
 HELMENTID       = '7&74D8485&0&24D7EBA4446A_C00000000' # The unique ID of the board (str)
 
 #Session-specific parameters
-yrange          = [-600, 600] # List of scalars ([negative, positive]) in order to set figure y axis range
+yrange          = [-500, 500] # List of scalars ([negative, positive]) in order to set figure y axis range
 
 #Signal arrays
 sample_rate     = 200 #Hertz

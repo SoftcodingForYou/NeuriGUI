@@ -166,6 +166,7 @@ class MainWindow(Processing):
 
         self.fig, self.ax   = plt.subplots(self.numchans, 1,
             figsize=(15, 8), dpi=80)
+        self.fig.tight_layout() # Reduce whitespace of the figure
 
         canvas = FigureCanvasTkAgg(self.fig, master=self.frameSignal)
         plot_widget = canvas.get_tk_widget()

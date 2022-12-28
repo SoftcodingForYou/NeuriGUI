@@ -22,10 +22,15 @@ class CountMeLikeOneYourFrenchGirls:
         for iPort in range(len(myports)):
             print(list(myports[iPort]))
             if 'Silicon Labs CP210x USB to UART Bridge' in list(myports[iPort])[1]:
-                self.COM    = list(myports[iPort])[0]
+                self.COM        = list(myports[iPort])[0]
+                self.command    = b'2'
+                self.contype    = 'USB'
                 print('Found Helment connected via USB')
-            elif '7&74D8485&0&24D7EBA4446A_C00000000' in list(myports[iPort])[2]:
-                self.COM    = list(myports[iPort])[0]
+            elif '7&74D8485&0&24D7EBA43656_C00000000' in list(myports[iPort])[2]:
+                continue
+                self.COM        = list(myports[iPort])[0]
+                self.command    = b'3'
+                self.contype    = 'BT'
                 print('Found Helment connected via Bluetooth')
 
         if self.COM == '':
@@ -37,7 +42,10 @@ class CountMeLikeOneYourFrenchGirls:
         self.ser.timeout    = self.TIMEOUT
         self.ser.port       = self.COM
         self.ser.open()
-        print('Connection established')
+        print('Connection established via ' + self.contype)
+
+        time.sleep(10)
+        self.ser.write(self.command)
 
 
     def sampling(self):

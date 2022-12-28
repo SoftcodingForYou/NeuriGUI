@@ -4,15 +4,16 @@ from backend.Helment_configure_board        import ConfigureBoard
 from backend.Helment_signal_sampling        import Sampling
 from backend.Helment_parameter_validation   import ParamVal
 from multiprocessing                        import Process, Pipe
-from tkinter                                import *
 from tkinter                                import messagebox
+from PIL                                    import Image, ImageTk
 from functools                              import partial
+from sys                                    import platform
 import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg      import FigureCanvasTkAgg
 import matplotlib.pyplot                    as plt
-from PIL                                    import Image, ImageTk
 import numpy                                as np
+import tkinter                              as tk
 import parameters                           as p
 
 
@@ -32,8 +33,53 @@ class MainWindow(Processing):
         self.s_down         = p.s_down
         self.idx_retain     = range(0, int(p.sample_rate * p.buffer_length), p.s_down)
         self.yrange         = p.yrange
-
         self.img_helment    = './backend/Isotipo-Helment-color.png'
+
+        # Splash screen
+        # -----------------------------------------------------------------
+        root = tk.Tk()
+
+        # multiple image size by zoom
+        pixels_x, pixels_y = tuple([int(0.10 * x) for x in Image.open(self.img_helment).size])
+        img = ImageTk.PhotoImage(Image.open(self.img_helment).resize((pixels_x, pixels_y)))
+
+        # Get information about screen to center the windows
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+
+        x_cordinate = int((screen_width/2) - (pixels_x/2))
+        y_cordinate = int((screen_height/2) - (pixels_y/2))
+
+        root.geometry("{}x{}+{}+{}".format(pixels_x, pixels_y, x_cordinate, y_cordinate))
+
+        if platform == "linux" or platform == "linux2":
+            root.overrideredirect(True)
+            root.wait_visibility(root)
+            root.wm_attributes("-alpha", 0.5)
+        elif platform == "darwin":
+            root.overrideredirect(True)
+            # Make the root window always on top
+            root.wm_attributes("-topmost", True)
+            # Turn off the window shadow
+            root.wm_attributes("-transparent", True)
+            # Set the root window background color to a transparent color
+            root.config(bg='systemTransparent')
+            # Store the PhotoImage to prevent early garbage collection
+            root.image = img
+            # Display the image on a label
+            label = tk.Label(root, image=root.image)
+            # Set the label background color to a transparent color
+            label.config(bg='systemTransparent')
+            label.pack()
+        elif platform == "win32":
+            root.image = img
+            label = tk.Label(root, image=root.image, bg='white')
+            root.overrideredirect(True)
+            root.lift()
+            root.wm_attributes("-topmost", True)
+            root.wm_attributes("-disabled", True)
+            root.wm_attributes("-transparentcolor", "white")
+            label.pack()
 
         # Load methods
         # -----------------------------------------------------------------
@@ -43,12 +89,8 @@ class MainWindow(Processing):
 
         # Listen to user input for setting state of board
         # -----------------------------------------------------------------
-        current_state = -1 # Value that does nothing
-        print('Waiting for input: Numerical key stroke...')
-        while True:
-            current_state = confboard.query_input()
-            if current_state == 2 or current_state == 3:
-                break
+        root.update()
+        root.after(0, self.on_start(root, confboard))
 
         # Generate variable exchange pipe
         # -----------------------------------------------------------------
@@ -59,59 +101,60 @@ class MainWindow(Processing):
         # -----------------------------------------------------------------
         self.sampling    = Process(target=sigproc.fetch_sample,
             args=(self.send_conn, confboard.ser, 
-            confboard.av_ports, current_state))
+            confboard.av_ports, self.current_state))
         
-        if current_state == 2 or current_state == 3:
+        if self.current_state == 2 or self.current_state == 3:
             self.sampling.start()
 
         # Build GUI
         # -----------------------------------------------------------------
-        self.master = Tk()
+        self.master = tk.Tk()
         self.master.title('Helment EEG GUI')
-        self.master.geometry('1600x900')
-        self.master.iconphoto(False, PhotoImage(file=self.img_helment))
+        pixels_x, pixels_y          = int(round(0.8*screen_width)), int(round(0.8*screen_height))
+        self.master.geometry("{}x{}".format(pixels_x, pixels_y))
+        # self.master.iconphoto(False, ImageTk.PhotoImage(file=self.img_helment))
         self.master.lift()
         self.master.attributes("-topmost", True)
         self.master.after_idle(self.master.attributes, '-topmost', False)
         
-        #multiple image size by zoom
-        pixels_x, pixels_y = tuple([int(0.01 * x)  for x in Image.open(self.img_helment).size])
+        # multiple image size by zoom
+        pixels_x, pixels_y = tuple([int(0.01 * x) for x in Image.open(self.img_helment).size])
         img = ImageTk.PhotoImage(Image.open(self.img_helment).resize((pixels_x, pixels_y)))
-        self.frameLogo = Label(self.master, image=img, bg='#dddddd')
+        self.frameLogo = tk.Label(self.master, image=img, bg='#dddddd')
         self.frameLogo.image = img
         self.frameLogo.grid(row=1, column=1)
-        self.frameLogo = LabelFrame(self.frameLogo, text='Logo',
+        self.frameLogo = tk.LabelFrame(self.frameLogo, text='Logo',
             padx=10, pady=10)
                     
-        self.frameYRange = Label(self.master, bg='#dddddd')
+        self.frameYRange = tk.Label(self.master, bg='#dddddd')
         self.frameYRange.grid(row=1, column=2)
-        self.frameYRange = LabelFrame(self.frameYRange, text='Vert. range (uV)',
+        self.frameYRange = tk.LabelFrame(self.frameYRange, text='Vert. range (uV)',
             padx=10, pady=10)
 
-        self.frameNotch = Label(self.master, bg='#dddddd')
+        self.frameNotch = tk.Label(self.master, bg='#dddddd')
         self.frameNotch.grid(row=1, column=3)
-        self.frameNotch = LabelFrame(self.frameNotch, text='Notch filter',
+        self.frameNotch = tk.LabelFrame(self.frameNotch, text='Notch filter',
             padx=10, pady=10)
 
-        self.frameBandpass = Label(self.master, bg='#dddddd')
+        self.frameBandpass = tk.Label(self.master, bg='#dddddd')
         self.frameBandpass.grid(row=1, column=4)
-        self.frameBandpass = LabelFrame(self.frameBandpass, text='Bandpass (Hz)',
+        self.frameBandpass = tk.LabelFrame(self.frameBandpass, text='Bandpass (Hz)',
             padx=10, pady=10)
 
-        self.frameStream = Label(self.master, bg='#dddddd')
+        self.frameStream = tk.Label(self.master, bg='#dddddd')
         self.frameStream.grid(row=1, column=5)
-        self.frameStream = LabelFrame(self.frameStream, text='Start/Stop data stream',
+        self.frameStream = tk.LabelFrame(self.frameStream, text='Start/Stop data stream',
             padx=10, pady=10)
 
-        self.frameSignal = Label(self.master, bg='#dddddd')
+        self.frameSignal = tk.Label(self.master, bg='#dddddd')
         self.frameSignal.grid(row=2, column=1, columnspan=5)
-        self.frameSignal = LabelFrame(self.frameSignal, text='Data stream', padx=70, pady=70)
+        self.frameSignal = tk.LabelFrame(self.frameSignal, text='Data stream', padx=70, pady=70)
 
         # Define inputs from GUI elements
-        notch           = IntVar()
-        bpass           = StringVar()
-        yran            = StringVar()
-        self.stream     = StringVar()
+        notch           = tk.IntVar()
+        bpass           = tk.StringVar()
+        yran            = tk.StringVar()
+        self.stream     = tk.StringVar()
         self.stream.set('Stop')
         self.streaming  = True
         self.bSB        = self.b_notch
@@ -119,43 +162,46 @@ class MainWindow(Processing):
         self.bPB        = self.b_wholerange
         self.aPB        = self.a_wholerange
 
-        Radiobutton(self.frameYRange, text='100',
+        tk.Radiobutton(self.frameYRange, text='100',
             variable=yran, value=100,
             command=partial(self.yrange_selection, yran)).grid(row=1, column=1)
-        Radiobutton(self.frameYRange, text='200',
+        tk.Radiobutton(self.frameYRange, text='200',
             variable=yran, value=200,
             command=partial(self.yrange_selection, yran)).grid(row=1, column=2)
-        Radiobutton(self.frameYRange, text='500',
+        tk.Radiobutton(self.frameYRange, text='500',
             variable=yran, value=500,
             command=partial(self.yrange_selection, yran)).grid(row=1, column=3)
-        Radiobutton(self.frameYRange, text='1000',
+        tk.Radiobutton(self.frameYRange, text='1000',
             variable=yran, value=1000,
             command=partial(self.yrange_selection, yran)).grid(row=1, column=4)
+        tk.Radiobutton(self.frameYRange, text='Auto',
+            variable=yran, value='Auto',
+            command=partial(self.yrange_selection, yran)).grid(row=1, column=5)
         self.frameYRange.grid(row=1, columnspan=1, padx=90)
 
-        Radiobutton(self.frameNotch, text='50 Hz',
+        tk.Radiobutton(self.frameNotch, text='50 Hz',
             variable=notch, value=50,
             command=partial(self.filt_selection, notch)).grid(row=1, column=1)
-        Radiobutton(self.frameNotch, text='60 Hz',
+        tk.Radiobutton(self.frameNotch, text='60 Hz',
             variable=notch, value=60,
             command=partial(self.filt_selection, notch)).grid(row=1, column=2)
-        Radiobutton(self.frameNotch, text='Off',
+        tk.Radiobutton(self.frameNotch, text='Off',
             variable=notch, value=0,
             command=partial(self.filt_selection, notch)).grid(row=1, column=3)
         self.frameNotch.grid(row=1, columnspan=1, padx=90)
 
-        Radiobutton(self.frameBandpass, text='0.5 - 45', 
+        tk.Radiobutton(self.frameBandpass, text='0.5 - 45', 
             variable=bpass, value='whole',
             command=partial(self.filt_selection, bpass)).grid(row=1, column=1)
-        Radiobutton(self.frameBandpass, text='1 - 30',
+        tk.Radiobutton(self.frameBandpass, text='1 - 30',
             variable=bpass, value='sleep',
             command=partial(self.filt_selection, bpass)).grid(row=1, column=2)
-        Radiobutton(self.frameBandpass, text='4 - 8',
+        tk.Radiobutton(self.frameBandpass, text='4 - 8',
             variable=bpass, value='theta',
             command=partial(self.filt_selection, bpass)).grid(row=1, column=3)
         self.frameBandpass.grid(row=1, columnspan=1, padx=90)
 
-        Button(self.frameStream, textvariable=self.stream, command=self.streamstate).pack()
+        tk.Button(self.frameStream, textvariable=self.stream, command=self.streamstate).pack()
         self.frameStream.pack()
 
         self.x = list(range(-self.numsamples, 0, self.s_down))
@@ -269,7 +315,13 @@ class MainWindow(Processing):
                 self.ax[iChan].set_xlim((x0, xend))
 
                 # Set vertical range
-                self.ax[iChan].set_ylim(self.yrange)
+                if self.yrange == None:
+                    extr_val = np.max([
+                        np.abs(np.min(self.y[iChan])),
+                        np.abs(np.max(self.y[iChan]))])
+                    self.ax[iChan].set_ylim((-extr_val, extr_val))
+                else:
+                    self.ax[iChan].set_ylim(self.yrange)
 
                 # re-render the artist, updating the canvas state, but not the screen
                 self.ax[iChan].draw_artist(sampleplot[iChan])
@@ -329,6 +381,9 @@ class MainWindow(Processing):
         elif choice == '1000':
             print('Vertical range set to -1000 uV to +1000 uV')
             self.yrange = (-1000, 1000)
+        elif choice == 'Auto':
+            print('Vertical range set relative to signal')
+            self.yrange = None
 
 
     def streamstate(self):
@@ -338,6 +393,16 @@ class MainWindow(Processing):
         elif self.stream.get() == 'Stop':
             self.stream.set('Start')
             self.streaming = False
+
+
+    def on_start(self, win, config):
+        self.current_state = -1 # Value that does nothing
+        print('Waiting for input: Numerical key stroke...')
+        while True:
+            self.current_state = config.query_input()
+            if self.current_state == 2 or self.current_state == 3:
+                win.destroy()
+                break
 
 
     def on_closing(self):

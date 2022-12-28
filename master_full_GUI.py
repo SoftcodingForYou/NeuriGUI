@@ -35,51 +35,11 @@ class MainWindow(Processing):
         self.yrange         = p.yrange
         self.img_helment    = './backend/Isotipo-Helment-color.png'
 
+        self.get_screen_info()
+
         # Splash screen
         # -----------------------------------------------------------------
-        root = tk.Tk()
-
-        # multiple image size by zoom
-        pixels_x, pixels_y = tuple([int(0.10 * x) for x in Image.open(self.img_helment).size])
-        img = ImageTk.PhotoImage(Image.open(self.img_helment).resize((pixels_x, pixels_y)))
-
-        # Get information about screen to center the windows
-        screen_width = root.winfo_screenwidth()
-        screen_height = root.winfo_screenheight()
-
-        x_cordinate = int((screen_width/2) - (pixels_x/2))
-        y_cordinate = int((screen_height/2) - (pixels_y/2))
-
-        root.geometry("{}x{}+{}+{}".format(pixels_x, pixels_y, x_cordinate, y_cordinate))
-
-        if platform == "linux" or platform == "linux2":
-            root.overrideredirect(True)
-            root.wait_visibility(root)
-            root.wm_attributes("-alpha", 0.5)
-        elif platform == "darwin":
-            root.overrideredirect(True)
-            # Make the root window always on top
-            root.wm_attributes("-topmost", True)
-            # Turn off the window shadow
-            root.wm_attributes("-transparent", True)
-            # Set the root window background color to a transparent color
-            root.config(bg='systemTransparent')
-            # Store the PhotoImage to prevent early garbage collection
-            root.image = img
-            # Display the image on a label
-            label = tk.Label(root, image=root.image)
-            # Set the label background color to a transparent color
-            label.config(bg='systemTransparent')
-            label.pack()
-        elif platform == "win32":
-            root.image = img
-            label = tk.Label(root, image=root.image, bg='white')
-            root.overrideredirect(True)
-            root.lift()
-            root.wm_attributes("-topmost", True)
-            root.wm_attributes("-disabled", True)
-            root.wm_attributes("-transparentcolor", "white")
-            label.pack()
+        splash = self.disp_splash()
 
         # Load methods
         # -----------------------------------------------------------------
@@ -89,8 +49,8 @@ class MainWindow(Processing):
 
         # Listen to user input for setting state of board
         # -----------------------------------------------------------------
-        root.update()
-        root.after(0, self.on_start(root, confboard))
+        splash.update()
+        splash.after(0, self.on_start(splash, confboard))
 
         # Generate variable exchange pipe
         # -----------------------------------------------------------------
@@ -106,12 +66,18 @@ class MainWindow(Processing):
         if self.current_state == 2 or self.current_state == 3:
             self.sampling.start()
 
+        self.build_frontend()
+        self.update_plot_data(self.canvas)
+
+
+    def build_frontend(self):
         # Build GUI
         # -----------------------------------------------------------------
         self.master = tk.Tk()
         self.master.title('Helment EEG GUI')
-        pixels_x, pixels_y          = int(round(0.8*screen_width)), int(round(0.8*screen_height))
-        self.master.geometry("{}x{}".format(pixels_x, pixels_y))
+        pixels_x, pixels_y          = int(round(0.8*self.screen_width)), int(round(0.8*self.screen_height))
+        x_cordinate, y_cordinate    = int((self.screen_width/2) - (pixels_x/2)), int((self.screen_height/2) - (pixels_y/2))
+        self.master.geometry("{}x{}+{}+{}".format(pixels_x, pixels_y, x_cordinate, y_cordinate))
         # self.master.iconphoto(False, ImageTk.PhotoImage(file=self.img_helment))
         self.master.lift()
         self.master.attributes("-topmost", True)
@@ -214,12 +180,10 @@ class MainWindow(Processing):
             figsize=(15, 8), dpi=80)
         self.fig.tight_layout() # Reduce whitespace of the figure
 
-        canvas = FigureCanvasTkAgg(self.fig, master=self.frameSignal)
-        plot_widget = canvas.get_tk_widget()
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.frameSignal)
+        plot_widget = self.canvas.get_tk_widget()
         plot_widget.grid(row=0, column=0)
         self.frameSignal.grid(row=0, column=0, columnspan=5)
-
-        self.update_plot_data(canvas)
 
 
     def update_plot_data(self, canvas):
@@ -393,6 +357,58 @@ class MainWindow(Processing):
         elif self.stream.get() == 'Stop':
             self.stream.set('Start')
             self.streaming = False
+
+
+    def get_screen_info(self):
+        root = tk.Tk()
+        # Get information about screen to center the windows
+        self.screen_width = root.winfo_screenwidth()
+        self.screen_height = root.winfo_screenheight()
+        root.destroy()
+
+
+    def disp_splash(self):
+        root = tk.Tk()
+
+        # multiple image size by zoom
+        pixels_x, pixels_y = tuple([int(0.10 * x) for x in Image.open(self.img_helment).size])
+        img = ImageTk.PhotoImage(Image.open(self.img_helment).resize((pixels_x, pixels_y)))
+
+        x_cordinate = int((self.screen_width/2) - (pixels_x/2))
+        y_cordinate = int((self.screen_height/2) - (pixels_y/2))
+
+        root.geometry("{}x{}+{}+{}".format(pixels_x, pixels_y, x_cordinate, y_cordinate))
+
+        if platform == "linux" or platform == "linux2":
+            root.overrideredirect(True)
+            root.wait_visibility(root)
+            root.wm_attributes("-alpha", 0.5)
+        elif platform == "darwin":
+            root.overrideredirect(True)
+            # Make the root window always on top
+            root.wm_attributes("-topmost", True)
+            # Turn off the window shadow
+            root.wm_attributes("-transparent", True)
+            # Set the root window background color to a transparent color
+            root.config(bg='systemTransparent')
+            # Store the PhotoImage to prevent early garbage collection
+            root.image = img
+            # Display the image on a label
+            label = tk.Label(root, image=root.image)
+            # Set the label background color to a transparent color
+            label.config(bg='systemTransparent')
+            label.pack()
+        elif platform == "win32":
+            root.image = img
+            label = tk.Label(root, image=root.image, bg='white')
+            root.overrideredirect(True)
+            root.lift()
+            root.wm_attributes("-topmost", True)
+            root.wm_attributes("-disabled", True)
+            root.wm_attributes("-transparentcolor", "white")
+            label.pack()
+
+        return root
 
 
     def on_start(self, win, config):

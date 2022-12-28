@@ -103,7 +103,8 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
 
         # Filter buffer signal and send filtered data to plotting funcs
         # -------------------------------------------------------------
-        processed_buffer    = self.prepare_buffer(buffer)
+        processed_buffer    = self.prepare_buffer(buffer,
+            self.b_notch, self.a_notch, self.b_sleep, self.a_sleep)
         processed_buffer    = processed_buffer[:, self.left_edge:]
 
         self.x              = self.x[1:]  # Remove the first y element

@@ -17,8 +17,17 @@ class Processing():
         self.b_wholerange, self.a_wholerange    = scipy.signal.butter(
             p.filter_order, p.frequency_bands["Whole"],
             btype='bandpass', fs=p.sample_rate)
+        self.b_sleep, self.a_sleep              = scipy.signal.butter(
+            p.filter_order, p.frequency_bands["Sleep"],
+            btype='bandpass', fs=p.sample_rate)
+        self.b_theta, self.a_theta              = scipy.signal.butter(
+            p.filter_order, p.frequency_bands["Theta"],
+            btype='bandpass', fs=p.sample_rate)
         self.b_notch, self.a_notch              = scipy.signal.butter(
             p.filter_order, p.frequency_bands["LineNoise"],
+            btype='stop', fs=p.sample_rate)
+        self.b_notch60, self.a_notch60          = scipy.signal.butter(
+            p.filter_order, p.frequency_bands["LineNoise60"],
             btype='stop', fs=p.sample_rate)
 
         # Determine padding length for signal filtering
@@ -65,35 +74,36 @@ class Processing():
         return downsampled_signal
 
 
-    def prepare_buffer(self, buffer):
+    def prepare_buffer(self, buffer, bSB, aSB, bPB, aPB):
         # =================================================================
         # Input:
         #   buffer              Numpy array [channels x samples]
+        #   bSB, aSB            Filter coefficients as put out by 
+        #                       scipy.signal.butter (Stopband)
+        #   bPB, aPB            Filter coefficients as put out by 
+        #                       scipy.signal.butter (Passband)
         # Output:
         #   filtered_buffer     Numpy array of filtered signal, same  
         #                       dimensions as input buffer
         # =================================================================
-        spike_free_signal   = np.zeros(buffer.shape)
         noise_free_signal   = np.zeros(buffer.shape)
         filtered_buffer     = np.zeros(buffer.shape)
         for iChan in range(self.numchans):
 
-            # Reject signal spikes (should only be apllied if necessary)
-            # -------------------------------------------------------------
-            # spike_free_signal[iChan,] = scipy.signal.medfilt(
-            #     self.buffer[iChan,], kernel_size=3)
-
-            spike_free_signal[iChan,] = buffer[iChan,]
-
             # Reject ambiant electrical noise (at 50 Hz)
             # -------------------------------------------------------------
-            noise_free_signal[iChan,] = self.filter_signal(
-                spike_free_signal[iChan,], self.b_notch, self.a_notch)
+            if all(bSB != None):
+                noise_free_signal[iChan,] = self.filter_signal(
+                    buffer[iChan,], bSB, aSB)
+            else:
+                noise_free_signal[iChan,] = buffer[iChan,]
 
             # Extract useful frequency range
             # -------------------------------------------------------------
-            filtered_buffer[iChan,] = self.filter_signal(
-                noise_free_signal[iChan,], self.b_wholerange, 
-                self.a_wholerange)
+            if all(bPB != None):
+                filtered_buffer[iChan,] = self.filter_signal(
+                    noise_free_signal[iChan,], bPB, aPB)
+            else:
+                filtered_buffer[iChan,] = noise_free_signal[iChan,]
 
         return filtered_buffer

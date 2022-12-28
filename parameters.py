@@ -2,7 +2,7 @@
 HELMENTID       = '7&74D8485&0&24D7EBA4446A_C00000000' # The unique ID of the board (str)
 
 #Session-specific parameters
-yrange          = [-1000, 1000] # List of scalars ([negative, positive]) in order to set figure y axis range
+yrange          = [-500, 500] # List of scalars ([negative, positive]) in order to set figure y axis range
 
 #Signal arrays
 sample_rate     = 200 #Hertz
@@ -27,4 +27,7 @@ s_down          = 5 #Desired downsampling factor (buffer_length*sample_rate/s_do
 filter_order    = 3 #scalar
 frequency_bands = {
     'LineNoise':    (46, 54),
-    'Whole':        (0.5, 45)}
+    'LineNoise60':  (56, 64),
+    'Sleep':        (1, 30),
+    'Theta':        (4, 8),
+    'Whole':        (1, 40)}

@@ -107,13 +107,18 @@ class MainWindow(Processing):
         self.frameBandpass = tk.LabelFrame(self.frameBandpass, text='Bandpass (Hz)',
             padx=10, pady=10)
 
+        self.frameEnvelope = tk.Label(self.master, bg='#dddddd')
+        self.frameEnvelope.grid(row=1, column=5)
+        self.frameEnvelope = tk.LabelFrame(self.frameEnvelope, text='Display envelope',
+            padx=10, pady=10)
+
         self.frameStream = tk.Label(self.master, bg='#dddddd')
-        self.frameStream.grid(row=1, column=5)
+        self.frameStream.grid(row=1, column=6)
         self.frameStream = tk.LabelFrame(self.frameStream, text='Start/Stop data stream',
             padx=10, pady=10)
 
         self.frameSignal = tk.Label(self.master, bg='#dddddd')
-        self.frameSignal.grid(row=2, column=1, columnspan=5)
+        self.frameSignal.grid(row=2, column=1, columnspan=6)
         self.frameSignal = tk.LabelFrame(self.frameSignal, text='Data stream', padx=70, pady=70)
 
         # Define inputs from GUI elements
@@ -123,10 +128,12 @@ class MainWindow(Processing):
         self.stream     = tk.StringVar()
         self.stream.set('Stop')
         self.streaming  = True
+        self.envelope   = False
         self.bSB        = self.b_notch
         self.aSB        = self.a_notch
         self.bPB        = self.b_wholerange
         self.aPB        = self.a_wholerange
+        envelope        = tk.BooleanVar()
 
         tk.Radiobutton(self.frameYRange, text='100',
             variable=yran, value=100,
@@ -166,6 +173,14 @@ class MainWindow(Processing):
             variable=bpass, value='theta',
             command=partial(self.filt_selection, bpass)).grid(row=1, column=3)
         self.frameBandpass.grid(row=1, columnspan=1, padx=90)
+
+        tk.Radiobutton(self.frameEnvelope, text='Off', 
+            variable=envelope, value=False,
+            command=partial(self.disp_envelope, envelope)).grid(row=1, column=1)
+        tk.Radiobutton(self.frameEnvelope, text='On',
+            variable=envelope, value=True,
+            command=partial(self.disp_envelope, envelope)).grid(row=1, column=2)
+        self.frameEnvelope.grid(row=1, columnspan=1, padx=90)
 
         tk.Button(self.frameStream, textvariable=self.stream, command=self.streamstate).pack()
         self.frameStream.pack()
@@ -250,6 +265,9 @@ class MainWindow(Processing):
             processed_buffer    = self.prepare_buffer(buffer, 
                 self.bSB, self.aSB, self.bPB, self.aPB)
             processed_buffer    = processed_buffer[:, self.left_edge:]
+
+            if self.envelope == True:
+                processed_buffer = self.extract_envelope(processed_buffer)
 
             self.x          = self.x[1:]  # Remove the first y element
             self.x.append(self.x[-1]+self.count/self.samplerate) # t_now/1000
@@ -348,6 +366,16 @@ class MainWindow(Processing):
         elif choice == 'Auto':
             print('Vertical range set relative to signal')
             self.yrange = None
+
+
+    def disp_envelope(self, button):
+        choice = button.get()
+        if choice == True:
+            print('Enabled envelope displaying')
+            self.envelope = True
+        elif choice == False:
+            print('Disabled envelope displaying')
+            self.envelope = False
 
 
     def streamstate(self):

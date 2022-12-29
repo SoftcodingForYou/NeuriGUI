@@ -56,6 +56,15 @@ class Processing():
         return signal_filtered
 
 
+    def extract_envelope(self, signal):
+        hilbert         = signal
+        for iChan in range(signal.shape[0]):
+            # padded_signal   = np.pad(signal[iChan,], (self.padlen, self.padlen), 'symmetric')
+            # hilbert[iChan,] = np.abs(scipy.signal.hilbert(padded_signal))[self.padlen:-self.padlen]
+            hilbert[iChan,] = np.abs(scipy.signal.hilbert(signal[iChan,]))
+        return hilbert
+
+
     def downsample(self, buffer, s_down):
         # =================================================================
         # Input:

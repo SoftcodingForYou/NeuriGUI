@@ -95,43 +95,45 @@ class Sampling():
             
             # Handle JSON samples and add to signal buffer ----------------
             eeg_data_line       = json.loads(raw_message)
+            buffer_in           = np.array([eeg_data_line["c1"],eeg_data_line["c2"]])
+            if s_per_buffer == 1:
+                buffer_in       = np.expand_dims(buffer_in, 1)
+
+            # Current timestamp -------------------------------------------
+            time_stamp_now  = round(time.perf_counter() * 1000, 0) - self.py_start
+            # This will generate unchanged time_stamps for all samples of 
+            # the incoming bufer (= 10 in case of bluetooth), but that is
+            # not a problem
 
             # Each channel carries self.s_per_buffer amounts of samples
             for iS in range(s_per_buffer):
 
                 self.sample_count   = self.sample_count + 1
-                if s_per_buffer > 1:
-                    buffer_line = [eeg_data_line['c1'][iS],eeg_data_line['c2'][iS]]
-                else:
-                    buffer_line = [eeg_data_line['c1'],eeg_data_line['c2']]
-                sample          = np.array([buffer_line])
-                sample          = np.transpose(sample)
+                
+                sample          = buffer_in[:, iS]
 
                 # Convert binary to voltage values
                 for iBin in range(sample.size):
                     sample[iBin] = self.bin_to_voltage(sample[iBin])
 
-                update_buffer   = np.concatenate((self.buffer, sample), axis=1)
-
-                # Current timestamp -------------------------------------------
-                time_stamp_now  = round(time.perf_counter() * 1000, 0) - self.py_start
-                time_stamps     = np.append(self.time_stamps, time_stamp_now)
+                update_buffer   = np.concatenate((self.buffer, np.expand_dims(sample, 1)), axis=1)
+                update_times    = np.append(self.time_stamps, time_stamp_now)
 
                 # Build new buffer and timestamp arrays
                 self.buffer     = update_buffer[:, 1:]
-                self.time_stamps= time_stamps[1:]
+                self.time_stamps= update_times[1:]
 
                 pipe_conn.send((self.buffer, time_stamp_now))
 
-            # Write out samples to file -----------------------------------
-            if self.sample_count == self.saving_interval:
+                # Write out samples to file -----------------------------------
+                if self.sample_count == self.saving_interval:
 
-                self.calc_sample_rate()
+                    self.calc_sample_rate(time_stamp_now, self.time_reset)
 
-                self.master_write_data(self.buffer, self.time_stamps, 
-                    self.saving_interval, self.output_file)
-                self.sample_count   = 0
-                self.time_reset     = self.time_stamps[-1]
+                    self.master_write_data(self.buffer, self.time_stamps, 
+                        self.saving_interval, self.output_file)
+                    self.sample_count   = 0
+                    self.time_reset     = time_stamp_now
 
 
     def master_write_data(self, eeg_data, time_stamps, saving_interval,
@@ -153,12 +155,12 @@ class Sampling():
         save_thread.start()
 
 
-    def calc_sample_rate(self):
+    def calc_sample_rate(self, curr_time, prev_iter_time):
 
-        time_diff           = self.time_stamps[-1] - self.time_reset
+        time_diff           = curr_time - prev_iter_time
         # It took (time_diff) ms to fetch (sample_rate) samples.
         # Calculate actual sampling rate
-        actual_sr           = self.sample_rate / (time_diff / 1000)
+        actual_sr           = (self.sample_rate / (time_diff / 1000))
         print('%d ms: Writing data (sampling rate = %f Hz)' %
             (self.time_stamps[-1], actual_sr))
 

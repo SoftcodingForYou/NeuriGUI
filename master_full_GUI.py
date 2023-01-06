@@ -90,36 +90,37 @@ class MainWindow(Processing):
         self.frameLogo.image = img
         self.frameLogo.grid(row=1, column=1)
         self.frameLogo = tk.LabelFrame(self.frameLogo, text='Logo',
-            padx=10, pady=10)
+            padx=0, pady=0)
                     
         self.frameYRange = tk.Label(self.master, bg='#dddddd')
         self.frameYRange.grid(row=1, column=2)
         self.frameYRange = tk.LabelFrame(self.frameYRange, text='Vert. range (uV)',
-            padx=10, pady=10)
+            padx=0, pady=0)
 
         self.frameNotch = tk.Label(self.master, bg='#dddddd')
         self.frameNotch.grid(row=1, column=3)
         self.frameNotch = tk.LabelFrame(self.frameNotch, text='Notch filter',
-            padx=10, pady=10)
+            padx=0, pady=0)
 
         self.frameBandpass = tk.Label(self.master, bg='#dddddd')
         self.frameBandpass.grid(row=1, column=4)
         self.frameBandpass = tk.LabelFrame(self.frameBandpass, text='Bandpass (Hz)',
-            padx=10, pady=10)
+            padx=0, pady=0)
 
         self.frameEnvelope = tk.Label(self.master, bg='#dddddd')
         self.frameEnvelope.grid(row=1, column=5)
         self.frameEnvelope = tk.LabelFrame(self.frameEnvelope, text='Display envelope',
-            padx=10, pady=10)
+            padx=0, pady=0)
 
         self.frameStream = tk.Label(self.master, bg='#dddddd')
         self.frameStream.grid(row=1, column=6)
         self.frameStream = tk.LabelFrame(self.frameStream, text='Start/Stop data stream',
-            padx=10, pady=10)
+            padx=0, pady=0)
 
         self.frameSignal = tk.Label(self.master, bg='#dddddd')
         self.frameSignal.grid(row=2, column=1, columnspan=6)
-        self.frameSignal = tk.LabelFrame(self.frameSignal, text='Data stream', padx=70, pady=70)
+        self.frameSignal = tk.LabelFrame(self.frameSignal, text='Data stream',
+            padx=0, pady=0)
 
         # Define inputs from GUI elements
         notch           = tk.IntVar()
@@ -161,7 +162,7 @@ class MainWindow(Processing):
         tk.Radiobutton(self.frameNotch, text='Off',
             variable=notch, value=0,
             command=partial(self.filt_selection, notch)).grid(row=1, column=3)
-        self.frameNotch.grid(row=1, columnspan=1, padx=90)
+        self.frameNotch.grid(row=1, columnspan=1, padx=0)
 
         tk.Radiobutton(self.frameBandpass, text='0.5 - 45', 
             variable=bpass, value='whole',
@@ -172,7 +173,7 @@ class MainWindow(Processing):
         tk.Radiobutton(self.frameBandpass, text='4 - 8',
             variable=bpass, value='theta',
             command=partial(self.filt_selection, bpass)).grid(row=1, column=3)
-        self.frameBandpass.grid(row=1, columnspan=1, padx=90)
+        self.frameBandpass.grid(row=1, columnspan=1, padx=0)
 
         tk.Radiobutton(self.frameEnvelope, text='Off', 
             variable=envelope, value=False,
@@ -180,7 +181,7 @@ class MainWindow(Processing):
         tk.Radiobutton(self.frameEnvelope, text='On',
             variable=envelope, value=True,
             command=partial(self.disp_envelope, envelope)).grid(row=1, column=2)
-        self.frameEnvelope.grid(row=1, columnspan=1, padx=90)
+        self.frameEnvelope.grid(row=1, columnspan=1, padx=0)
 
         tk.Button(self.frameStream, textvariable=self.stream, command=self.streamstate).pack()
         self.frameStream.pack()
@@ -192,7 +193,7 @@ class MainWindow(Processing):
             self.y.append([0 for _ in range(0, self.numsamples, self.s_down)])
 
         self.fig, self.ax   = plt.subplots(self.numchans, 1,
-            figsize=(15, 8), dpi=80)
+            figsize=(self.screen_width*0.7/80, self.screen_height*0.7/80), dpi=80)
         self.fig.tight_layout() # Reduce whitespace of the figure
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frameSignal)

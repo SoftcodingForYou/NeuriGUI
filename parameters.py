@@ -1,5 +1,5 @@
 #Board unit-specific parameters
-HELMENTID       = '7&74D8485&0&24D7EBA4446A_C00000000' # The unique ID of the board (str)
+HELMENTID       = '7&2F45FB97&0&24D7EBA43B56_C00000000' # The unique ID of the board (str)
 
 #Session-specific parameters
 yrange          = [-500, 500] # List of scalars ([negative, positive]) in order to set figure y axis range

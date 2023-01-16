@@ -22,12 +22,12 @@ class CountMeLikeOneYourFrenchGirls:
         for iPort in range(len(myports)):
             print(list(myports[iPort]))
             if 'Silicon Labs CP210x USB to UART Bridge' in list(myports[iPort])[1]:
+                continue
                 self.COM        = list(myports[iPort])[0]
                 self.command    = b'2'
                 self.contype    = 'USB'
                 print('Found Helment connected via USB')
-            elif '7&74D8485&0&24D7EBA43656_C00000000' in list(myports[iPort])[2]:
-                continue
+            elif '7&2F45FB97&0&24D7EBA43B56_C00000000' in list(myports[iPort])[2]:
                 self.COM        = list(myports[iPort])[0]
                 self.command    = b'3'
                 self.contype    = 'BT'

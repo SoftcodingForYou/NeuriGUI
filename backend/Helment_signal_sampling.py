@@ -1,5 +1,6 @@
 import json
 import time
+import socket
 import parameters                       as p
 import numpy                            as np
 from threading                          import Thread
@@ -36,6 +37,34 @@ class Sampling():
 
         self.numchans   = p.buffer_channels
 
+        # Build relay connection for other programs
+        self.build_relay(p.udp_ip)
+
+
+    def build_relay(self, ip):
+        # =================================================================
+        # This connection will be used in order to transfer the incoming 
+        # signal from the board to a dynamuically defined port via UDP
+        # =================================================================
+
+        self.udp_port   = self.search_free_com(ip)
+        self.udp_ip     = ip
+        self.send_sock  = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+        print('Relay connection established at ' + self.udp_ip + ':' + str(self.udp_port))
+        print('Use this connection to import signals in your own program!\n')
+        time.sleep(2)
+
+
+    def search_free_com(self, ip):
+
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        for iPort in range(12344, 12350):
+            try:
+                s = s.connect((ip, iPort))
+            except:
+                return iPort
+
+        raise Exception('No available UDP port found for signal relay')
 
     def bin_to_voltage(self, s_bin):
         # =================================================================
@@ -104,6 +133,10 @@ class Sampling():
             # This will generate unchanged time_stamps for all samples of 
             # the incoming bufer (= 10 in case of bluetooth), but that is
             # not a problem
+
+            # Construct relay message -------------------------------------
+            raw_message = raw_message[:1] + '"t":' + str(time_stamp_now) + ',' + raw_message[1:]
+            self.send_sock.sendto(bytes(raw_message, "utf-8"), (self.udp_ip, self.udp_port))
 
             # Each channel carries self.s_per_buffer amounts of samples
             for iS in range(s_per_buffer):

@@ -18,6 +18,9 @@ baud_rate       = 115200 #scalar default baudrate for connection
 port            = '' #Leave blank as dynamically scanned for later
 time_out        = None #Wait for message
 
+# Signal relay
+udp_ip          = "127.0.0.1" # Loopback ip for on-device communication
+
 #Plotting
 plot_intv       = 200 #scalar defining update rate of figure (ms)
 s_down          = 5 #Desired downsampling factor (buffer_length*sample_rate/s_down must be convertable to integer)

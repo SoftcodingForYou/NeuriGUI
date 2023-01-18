@@ -1,6 +1,8 @@
 import serial #Crucial: Install using pip3 install "pyserial", NOT "serial"
 import serial.tools.list_ports
 import time
+import json
+import numpy as np
 
 class CountMeLikeOneYourFrenchGirls:
 
@@ -22,12 +24,12 @@ class CountMeLikeOneYourFrenchGirls:
         for iPort in range(len(myports)):
             print(list(myports[iPort]))
             if 'Silicon Labs CP210x USB to UART Bridge' in list(myports[iPort])[1]:
+                continue
                 self.COM        = list(myports[iPort])[0]
                 self.command    = b'2'
                 self.contype    = 'USB'
                 print('Found Helment connected via USB')
-            elif '7&74D8485&0&24D7EBA43656_C00000000' in list(myports[iPort])[2]:
-                continue
+            elif '7&74D8485&0&7C9EBDABB922_C00000000' in list(myports[iPort])[2]:
                 self.COM        = list(myports[iPort])[0]
                 self.command    = b'3'
                 self.contype    = 'BT'
@@ -44,7 +46,7 @@ class CountMeLikeOneYourFrenchGirls:
         self.ser.open()
         print('Connection established via ' + self.contype)
 
-        time.sleep(10)
+        time.sleep(5)
         self.ser.write(self.command)
 
 
@@ -52,6 +54,14 @@ class CountMeLikeOneYourFrenchGirls:
 
         i_sample            = 0
         t_now               = round(time.perf_counter() * 1000, 4) # ms
+
+        board_booting = True
+        print('Board is booting up ...')
+        while board_booting:
+            raw_message = str(self.ser.readline())
+            if '{' in raw_message and '}' in raw_message:
+                print('Fully started')
+                board_booting = False
             
         while True:
             
@@ -59,6 +69,17 @@ class CountMeLikeOneYourFrenchGirls:
             raw_message     = str(self.ser.readline())
             # print(raw_message)
             i_sample        = i_sample + 1
+
+            if '{' not in raw_message or '}' not in raw_message:
+                continue
+
+            idx_start           = raw_message.find("{")
+            idx_stop            = raw_message.find("}")
+            raw_message         = raw_message[idx_start:idx_stop+1]
+            
+            # Process samples
+            eeg_data_line       = json.loads(raw_message)
+            print(np.diff(eeg_data_line["c1"]))
 
             if t_iteration >= t_now + 1000:
                 t_diff      = (t_iteration - t_now) / 1000

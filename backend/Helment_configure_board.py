@@ -29,19 +29,19 @@ class ConfigureBoard:
 
         self.av_ports       = {'USB': None, 'BT': None}
 
-        # Look for device: Bluetooth if available and USB only as fallback
+        # Look for device
         # -----------------------------------------------------------------
-        myports = [tuple(ports) for ports in list(serial.tools.list_ports.comports())]
+        ports = list(serial.tools.list_ports.comports())
         
-        for iPort in range(len(myports)):
-            print(list(myports[iPort]))
-            if self.id in list(myports[iPort])[2]:
+        for port in ports:
+            print(port)
+            if self.id in port.hwid:
                 # Bluetooth device query
-                self.av_ports["BT"] = list(myports[iPort])[0]
+                self.av_ports["BT"] = port.device
                 print('Found Helment connected via Bluetooth')
-            elif 'Silicon Labs CP210x USB to UART Bridge' in list(myports[iPort])[1]:
+            elif 'Silicon Labs CP210x USB to UART Bridge' in port.description:
                 # USB device query
-                self.av_ports["USB"] = list(myports[iPort])[0]
+                self.av_ports["USB"] = port.device
                 print('Found Helment connected via USB')
 
         if all(val == None for val in list(self.av_ports.values())):
@@ -95,21 +95,21 @@ class ConfigureBoard:
             key = keyboard.read_key()
             key = int(key)
 
-            if key == "0": # "Non-sense" mode (sends defined string)
+            if key == 0: # "Non-sense" mode (sends defined string)
                 print('Asking if board alive')
-            elif key == "1": # Standby mode of the board
+            elif key == 1: # Standby mode of the board
                 print('Putting board to standby. Waiting for new state...')
-            elif key == "2": # Start sampling
+            elif key == 2: # Start sampling
                 if self.av_ports["USB"] == None:
                     raise Exception('USB was chosen but is not available')
                 print('Starting sampling via USB')
-            elif key == "3": # Start sampling
+            elif key == 3: # Start sampling
                 if self.av_ports["BT"] == None:
                     raise Exception('Bluetooth was chosen but is not available')
                 print('Starting sampling via Bluetooth')
-            elif key == "4": # Configuration mode
+            elif key == 4: # Configuration mode
                 print('Not implemented: Send configuration')
-            elif key == "5": # Reset device
+            elif key == 5: # Reset device
                 print('Resetting device')
 
             self.inform_board(key)

@@ -1,5 +1,5 @@
 #Board unit-specific parameters
-HELMENTID       = '7&74D8485&0&24D7EBA4446A_C00000000' # The unique ID of the board (str)
+HELMENTID       = '7&2F45FB97&0&24D7EBA43B56_C00000000' # The unique ID of the board (str)
 
 #Session-specific parameters
 yrange          = [-500, 500] # List of scalars ([negative, positive]) in order to set figure y axis range
@@ -17,6 +17,9 @@ PGA             = 24 #scalar
 baud_rate       = 115200 #scalar default baudrate for connection
 port            = '' #Leave blank as dynamically scanned for later
 time_out        = None #Wait for message
+
+# Signal relay
+udp_ip          = "127.0.0.1" # Loopback ip for on-device communication
 
 #Plotting
 plot_intv       = 200 #scalar defining update rate of figure (ms)

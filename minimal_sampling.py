@@ -3,6 +3,7 @@ import serial.tools.list_ports
 import time
 import json
 import numpy as np
+from bluetooth import discover_devices
 
 class CountMeLikeOneYourFrenchGirls:
 
@@ -18,19 +19,19 @@ class CountMeLikeOneYourFrenchGirls:
 
     def connect_board(self):
 
-        myports             = [tuple(ports) for ports in 
-            list(serial.tools.list_ports.comports())]
+        ports       = list(serial.tools.list_ports.comports())
+        # bt_devices  = discover_devices(lookup_names = True)
         
-        for iPort in range(len(myports)):
-            print(list(myports[iPort]))
-            if 'Silicon Labs CP210x USB to UART Bridge' in list(myports[iPort])[1]:
+        for port in ports:
+            print(str(port) + ' - ' + port.hwid)
+            if 'Silicon Labs CP210x USB to UART Bridge' in port.description:
                 continue
-                self.COM        = list(myports[iPort])[0]
+                self.COM        = port.device
                 self.command    = b'2'
                 self.contype    = 'USB'
                 print('Found Helment connected via USB')
-            elif '7&74D8485&0&7C9EBDABB922_C00000000' in list(myports[iPort])[2]:
-                self.COM        = list(myports[iPort])[0]
+            elif '7&74D8485&0&7C9EBDABB922_C00000000' in port.hwid:
+                self.COM        = port.device
                 self.command    = b'3'
                 self.contype    = 'BT'
                 print('Found Helment connected via Bluetooth')
@@ -59,6 +60,7 @@ class CountMeLikeOneYourFrenchGirls:
         print('Board is booting up ...')
         while board_booting:
             raw_message = str(self.ser.readline())
+            print(raw_message)
             if '{' in raw_message and '}' in raw_message:
                 print('Fully started')
                 board_booting = False
@@ -68,6 +70,7 @@ class CountMeLikeOneYourFrenchGirls:
             t_iteration     = round(time.perf_counter() * 1000, 4) # ms
             raw_message     = str(self.ser.readline())
             # print(raw_message)
+
             i_sample        = i_sample + 1
 
             if '{' not in raw_message or '}' not in raw_message:
@@ -79,7 +82,8 @@ class CountMeLikeOneYourFrenchGirls:
             
             # Process samples
             eeg_data_line       = json.loads(raw_message)
-            print(np.diff(eeg_data_line["c1"]))
+            # print(eeg_data_line["c1"])
+            # print(np.diff(eeg_data_line["c1"]))
 
             if t_iteration >= t_now + 1000:
                 t_diff      = (t_iteration - t_now) / 1000

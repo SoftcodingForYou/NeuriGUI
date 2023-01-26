@@ -151,7 +151,7 @@ class MainWindow(Processing):
         tk.Radiobutton(self.frameYRange, text='Auto',
             variable=yran, value='Auto',
             command=partial(self.yrange_selection, yran)).grid(row=1, column=5)
-        self.frameYRange.grid(row=1, columnspan=1, padx=90)
+        self.frameYRange.grid(row=1, columnspan=1, padx= 0)
 
         tk.Radiobutton(self.frameNotch, text='50 Hz',
             variable=notch, value=50,

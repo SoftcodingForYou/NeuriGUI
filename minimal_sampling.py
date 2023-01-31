@@ -2,6 +2,8 @@ import serial #Crucial: Install using pip3 install "pyserial", NOT "serial"
 import serial.tools.list_ports
 import time
 import json
+import numpy as np
+from bluetooth import discover_devices
 
 class CountMeLikeOneYourFrenchGirls:
 
@@ -17,19 +19,19 @@ class CountMeLikeOneYourFrenchGirls:
 
     def connect_board(self):
 
-        myports             = [tuple(ports) for ports in 
-            list(serial.tools.list_ports.comports())]
+        ports       = list(serial.tools.list_ports.comports())
+        # bt_devices  = discover_devices(lookup_names = True)
         
-        for iPort in range(len(myports)):
-            print(list(myports[iPort]))
-            if 'Silicon Labs CP210x USB to UART Bridge' in list(myports[iPort])[1]:
+        for port in ports:
+            print(str(port) + ' - ' + port.hwid)
+            if 'Silicon Labs CP210x USB to UART Bridge' in port.description:
                 continue
-                self.COM        = list(myports[iPort])[0]
+                self.COM        = port.device
                 self.command    = b'2'
                 self.contype    = 'USB'
                 print('Found Helment connected via USB')
-            elif '7&2F45FB97&0&7C9EBDABB922_C00000000' in list(myports[iPort])[2]:
-                self.COM        = list(myports[iPort])[0]
+            elif '7&74D8485&0&7C9EBDABB922_C00000000' in port.hwid:
+                self.COM        = port.device
                 self.command    = b'3'
                 self.contype    = 'BT'
                 print('Found Helment connected via Bluetooth')
@@ -75,6 +77,18 @@ class CountMeLikeOneYourFrenchGirls:
             eeg_data_line       = json.loads(raw_message)
 
             i_sample        = i_sample + 1
+
+            if '{' not in raw_message or '}' not in raw_message:
+                continue
+
+            idx_start           = raw_message.find("{")
+            idx_stop            = raw_message.find("}")
+            raw_message         = raw_message[idx_start:idx_stop+1]
+            
+            # Process samples
+            eeg_data_line       = json.loads(raw_message)
+            # print(eeg_data_line["c1"])
+            # print(np.diff(eeg_data_line["c1"]))
 
             if t_iteration >= t_now + 1000:
                 t_diff      = (t_iteration - t_now) / 1000

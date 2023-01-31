@@ -1,6 +1,7 @@
 import serial #Crucial: Install using pip3 install "pyserial", NOT "serial"
 import serial.tools.list_ports
 import time
+import json
 
 class CountMeLikeOneYourFrenchGirls:
 
@@ -27,7 +28,7 @@ class CountMeLikeOneYourFrenchGirls:
                 self.command    = b'2'
                 self.contype    = 'USB'
                 print('Found Helment connected via USB')
-            elif '7&2F45FB97&0&24D7EBA43B56_C00000000' in list(myports[iPort])[2]:
+            elif '7&2F45FB97&0&7C9EBDABB922_C00000000' in list(myports[iPort])[2]:
                 self.COM        = list(myports[iPort])[0]
                 self.command    = b'3'
                 self.contype    = 'BT'
@@ -44,7 +45,7 @@ class CountMeLikeOneYourFrenchGirls:
         self.ser.open()
         print('Connection established via ' + self.contype)
 
-        time.sleep(10)
+        time.sleep(5)
         self.ser.write(self.command)
 
 
@@ -52,12 +53,27 @@ class CountMeLikeOneYourFrenchGirls:
 
         i_sample            = 0
         t_now               = round(time.perf_counter() * 1000, 4) # ms
+
+        board_booting = True
+        print('Board is booting up ...')
+        while board_booting:
+            raw_message = str(self.ser.readline())
+            print(raw_message)
+            if '{' in raw_message and '}' in raw_message:
+                print('Fully started')
+                board_booting = False
             
         while True:
             
             t_iteration     = round(time.perf_counter() * 1000, 4) # ms
             raw_message     = str(self.ser.readline())
             # print(raw_message)
+
+            idx_start           = raw_message.find("{")
+            idx_stop            = raw_message.find("}")
+            raw_message         = raw_message[idx_start:idx_stop+1]
+            eeg_data_line       = json.loads(raw_message)
+
             i_sample        = i_sample + 1
 
             if t_iteration >= t_now + 1000:

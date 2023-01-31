@@ -91,25 +91,31 @@ class Sampling():
         if desired_con == 2: # USB
             ser.port        = cons["USB"]
             s_per_buffer    = 1
-            print('USB')
+            print('Ordered board to send data via USB. Switching mode ...')
         elif desired_con == 3: # Bluetooth
             ser.port        = cons["BT"]
             s_per_buffer    = 10
-            print('BT')
+            print('Ordered board to send data via Bluetooth. Switching mode ...')
 
         # Open communication ----------------------------------------------
         if ser.port == None:
             raise Exception('Verify that desired connection type (USB or Bluetooth) are indeed available')
         else:
             ser.open()
+            time.sleep(5)
 
         ser.write(bytes(str(desired_con), 'utf-8'))
+        time.sleep(1)
 
         board_booting = True
         print('Board is booting up ...')
         while board_booting:
             raw_message = str(ser.readline())
-            if '{' in raw_message and '}' in raw_message:
+            print(raw_message)
+            if 'Listening ...' in raw_message:
+                ser.write(bytes(str(desired_con), 'utf-8')) # Try again
+                time.sleep(1)
+            elif '{' in raw_message and '}' in raw_message:
                 print('Fully started')
                 board_booting = False
 

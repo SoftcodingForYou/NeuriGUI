@@ -69,12 +69,12 @@ class ConfigureBoard:
         self.ser.timeout    = p.time_out
         if self.av_ports["BT"] != None:
             self.ser.port   = self.av_ports["BT"]
-            str_comtype = 'Communication via Bluetooth'
+            str_comtype = 'Board prepared to receive input via Bluetooth'
         elif self.av_ports["USB"] != None:
             self.ser.port   = self.av_ports["USB"]
-            str_comtype = 'Communication via USB'
+            str_comtype = 'Board prepared to receive input via USB'
         self.ser.open() # Resets automatically the board
-        print(str_comtype + ' established\n')
+        print(str_comtype)
         
 
     def query_input(self):
@@ -102,11 +102,11 @@ class ConfigureBoard:
             elif key == 2: # Start sampling
                 if self.av_ports["USB"] == None:
                     raise Exception('USB was chosen but is not available')
-                print('Starting sampling via USB')
+                print('Preparing sampling via USB')
             elif key == 3: # Start sampling
                 if self.av_ports["BT"] == None:
                     raise Exception('Bluetooth was chosen but is not available')
-                print('Starting sampling via Bluetooth')
+                print('Preparing sampling via Bluetooth')
             elif key == 4: # Configuration mode
                 print('Not implemented: Send configuration')
             elif key == 5: # Reset device

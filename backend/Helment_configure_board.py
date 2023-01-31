@@ -34,7 +34,7 @@ class ConfigureBoard:
         ports = list(serial.tools.list_ports.comports())
         
         for port in ports:
-            print(port)
+            print(str(port) + ' - ' + port.hwid)
             if self.id in port.hwid:
                 # Bluetooth device query
                 self.av_ports["BT"] = port.device
@@ -67,12 +67,12 @@ class ConfigureBoard:
         self.ser            = serial.Serial()
         self.ser.baudrate   = p.baud_rate
         self.ser.timeout    = p.time_out
-        if self.av_ports["USB"] != None:
-            self.ser.port   = self.av_ports["USB"]
-            str_comtype = 'Communication via USB'
-        elif self.av_ports["BT"] != None:
+        if self.av_ports["BT"] != None:
             self.ser.port   = self.av_ports["BT"]
             str_comtype = 'Communication via Bluetooth'
+        elif self.av_ports["USB"] != None:
+            self.ser.port   = self.av_ports["USB"]
+            str_comtype = 'Communication via USB'
         self.ser.open() # Resets automatically the board
         print(str_comtype + ' established\n')
         

@@ -119,6 +119,12 @@ class Sampling():
                 print('Fully started')
                 board_booting = False
 
+
+        # Preallocate json relay message
+        relay_message = {}
+        relay_message["t"]  = ''
+        relay_message["c1"] = ''
+        relay_message["c2"] = ''
             
         while True:
         
@@ -140,10 +146,6 @@ class Sampling():
             # the incoming bufer (= 10 in case of bluetooth), but that is
             # not a problem
 
-            # Construct relay message -------------------------------------
-            raw_message = raw_message[:1] + '"t":' + str(time_stamp_now) + ',' + raw_message[1:]
-            self.send_sock.sendto(bytes(raw_message, "utf-8"), (self.udp_ip, self.udp_port))
-
             # Each channel carries self.s_per_buffer amounts of samples
             for iS in range(s_per_buffer):
 
@@ -161,6 +163,13 @@ class Sampling():
                 # Build new buffer and timestamp arrays
                 self.buffer     = update_buffer[:, 1:]
                 self.time_stamps= update_times[1:]
+
+                # Construct relay message -------------------------------------
+                relay_message["t"]  = str(time_stamp_now)
+                relay_message["c1"] = str(sample[0])
+                relay_message["c2"] = str(sample[1])
+
+                self.send_sock.sendto(bytes(json.dumps(relay_message), "utf-8"), (self.udp_ip, self.udp_port))
 
                 pipe_conn.send((self.buffer, time_stamp_now))
 

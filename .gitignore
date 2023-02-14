@@ -9,3 +9,8 @@ backend/__pycache__/Helment_configure_board.cpython-39.pyc
 backend/__pycache__/Helment_parameter_validation.cpython-39.pyc
 backend/__pycache__/Helment_signal_processing.cpython-39.pyc
 backend/__pycache__/Helment_signal_sampling.cpython-39.pyc
+__pycache__/parameters.cpython-36.pyc
+backend/__pycache__/Helment_configure_board.cpython-36.pyc
+backend/__pycache__/Helment_parameter_validation.cpython-36.pyc
+backend/__pycache__/Helment_signal_processing.cpython-36.pyc
+backend/__pycache__/Helment_signal_sampling.cpython-36.pyc

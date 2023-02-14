@@ -127,16 +127,25 @@ class Sampling():
         relay_message["c2"] = ''
             
         while True:
-        
-            raw_message = str(ser.readline())
-
-            idx_start           = raw_message.find("{")
-            idx_stop            = raw_message.find("}")
-            raw_message         = raw_message[idx_start:idx_stop+1]
             
-            # Handle JSON samples and add to signal buffer ----------------
-            eeg_data_line       = json.loads(raw_message)
-            buffer_in           = np.array([eeg_data_line["c1"],eeg_data_line["c2"]])
+            correct_message         = False
+            while not correct_message:
+                raw_message         = str(ser.readline())
+                raw_message         = raw_message[2:]
+                raw_message         = raw_message.replace("\'", "")
+                raw_message         = raw_message.replace("\\r", "")
+                raw_message         = raw_message.replace("\\n", "")
+
+                # Handle JSON samples and add to signal buffer ----------------
+                try:
+                    eeg_data_line   = json.loads(raw_message)
+                    buffer_in       = np.array([eeg_data_line["c1"],eeg_data_line["c2"]])
+                    correct_message = True
+                    break
+                except json.JSONDecodeError:
+                    ser.read(ser.inWaiting())
+                    continue
+                
             if s_per_buffer == 1:
                 buffer_in       = np.expand_dims(buffer_in, 1)
 

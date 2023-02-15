@@ -125,24 +125,32 @@ class Sampling():
         relay_message["t"]  = ''
         relay_message["c1"] = ''
         relay_message["c2"] = ''
+
+        ser.read(ser.inWaiting()) # Eliminate message queue at port
             
         while True:
             
             correct_message         = False
             while not correct_message:
-                raw_message         = str(ser.readline())
-                raw_message         = raw_message[2:]
-                raw_message         = raw_message.replace("\'", "")
-                raw_message         = raw_message.replace("\\r", "")
-                raw_message         = raw_message.replace("\\n", "")
+                raw_message     = str(ser.readline())
+
+                # Strip all non-json format characters
+                raw_message     = raw_message[2:]
+                raw_message     = raw_message.replace("\'", "")
+                raw_message     = raw_message.replace("\\r", "")
+                raw_message     = raw_message.replace("\\n", "")
 
                 # Handle JSON samples and add to signal buffer ----------------
                 try:
+                    # 1) In general, serial messages have to be expected to be 
+                    # incomplete and 2) Touching board components can lead to 
+                    # message corruption. We prevent code breakage when 
+                    # corrupted messages come in 
                     eeg_data_line   = json.loads(raw_message)
-                    buffer_in       = np.array([eeg_data_line["c1"],eeg_data_line["c2"]])
-                    correct_message = True
+                    buffer_in       = [eeg_data_line["c1"],eeg_data_line["c2"]]
                     break
-                except json.JSONDecodeError:
+                except json.JSONDecodeError: # NEEDS COMPLETION IN CASE OF KEY ERROR c1 and c2
+                    # Take advantage and reset message queue
                     ser.read(ser.inWaiting())
                     continue
                 

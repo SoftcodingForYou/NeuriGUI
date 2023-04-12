@@ -75,8 +75,8 @@ class MainWindow(Processing):
         # -----------------------------------------------------------------
         self.master = tk.Tk()
         self.master.title('Helment EEG GUI')
-        pixels_x, pixels_y          = int(round(0.8*self.screen_width)), int(round(0.8*self.screen_height))
-        x_cordinate, y_cordinate    = int((self.screen_width/2) - (pixels_x/2)), int((self.screen_height/2) - (pixels_y/2))
+        pixels_x, pixels_y          = int(round(0.71*self.screen_width)), int(round(0.8*self.screen_height))
+        x_cordinate, y_cordinate    = int((self.screen_width/2) - (pixels_x/2)), int(0)
         self.master.geometry("{}x{}+{}+{}".format(pixels_x, pixels_y, x_cordinate, y_cordinate))
         # self.master.iconphoto(False, ImageTk.PhotoImage(file=self.img_helment))
         self.master.lift()

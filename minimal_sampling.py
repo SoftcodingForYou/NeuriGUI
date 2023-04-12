@@ -71,6 +71,11 @@ class CountMeLikeOneYourFrenchGirls:
             raw_message     = str(self.ser.readline())
             # print(raw_message)
 
+            idx_start           = raw_message.find("{")
+            idx_stop            = raw_message.find("}")
+            raw_message         = raw_message[idx_start:idx_stop+1]
+            eeg_data_line       = json.loads(raw_message)
+
             i_sample        = i_sample + 1
 
             if '{' not in raw_message or '}' not in raw_message:

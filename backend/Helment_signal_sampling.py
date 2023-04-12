@@ -91,43 +91,73 @@ class Sampling():
         if desired_con == 2: # USB
             ser.port        = cons["USB"]
             s_per_buffer    = 1
-            print('USB')
+            print('Ordered board to send data via USB. Switching mode ...')
         elif desired_con == 3: # Bluetooth
             ser.port        = cons["BT"]
             s_per_buffer    = 10
-            print('BT')
+            print('Ordered board to send data via Bluetooth. Switching mode ...')
 
         # Open communication ----------------------------------------------
         if ser.port == None:
             raise Exception('Verify that desired connection type (USB or Bluetooth) are indeed available')
         else:
             ser.open()
+            time.sleep(5)
 
         ser.write(bytes(str(desired_con), 'utf-8'))
+        time.sleep(1)
 
         board_booting = True
         print('Board is booting up ...')
         while board_booting:
             raw_message = str(ser.readline())
-            if '{' in raw_message and '}' in raw_message:
+            print(raw_message)
+            if 'Listening ...' in raw_message:
+                ser.write(bytes(str(desired_con), 'utf-8')) # Try again
+                time.sleep(1)
+            elif '{' in raw_message and '}' in raw_message:
                 print('Fully started')
                 board_booting = False
 
+
+        # Preallocate json relay message
+        relay_message = {}
+        relay_message["t"]  = ''
+        relay_message["c1"] = ''
+        relay_message["c2"] = ''
+
+        ser.read(ser.inWaiting()) # Eliminate message queue at port
             
         while True:
-        
-            raw_message = str(ser.readline())
-
-            idx_start           = raw_message.find("{")
-            idx_stop            = raw_message.find("}")
-            raw_message         = raw_message[idx_start:idx_stop+1]
             
-            # Handle JSON samples and add to signal buffer ----------------
-            eeg_data_line       = json.loads(raw_message)
+            correct_message         = False
+            while not correct_message:
+                raw_message     = str(ser.readline())
 
-            # Crucial to specify "float" in next line since bin_to_voltage
-            # function will otherwise return integers
-            buffer_in           = np.array([eeg_data_line["c1"],eeg_data_line["c2"]], dtype=float)
+                # Strip all non-json format characters
+                raw_message     = raw_message[2:]
+                raw_message     = raw_message.replace("\'", "")
+                raw_message     = raw_message.replace("\\r", "")
+                raw_message     = raw_message.replace("\\n", "")
+
+                # Handle JSON samples and add to signal buffer ----------------
+                try:
+                    # 1) In general, serial messages have to be expected to be 
+                    # incomplete and 2) Touching board components can lead to 
+                    # message corruption. We prevent code breakage when 
+                    # corrupted messages come in 
+                    eeg_data_line   = json.loads(raw_message)
+
+                    # Important to specify float as data type since 
+                    # otherwise, the bin_to_coltage function will return 
+                    # integers
+                    buffer_in       = np.array([eeg_data_line["c1"],eeg_data_line["c2"]], dtype=float)
+                    break
+                except json.JSONDecodeError: # NEEDS COMPLETION IN CASE OF KEY ERROR c1 and c2
+                    # Take advantage and reset message queue
+                    ser.read(ser.inWaiting())
+                    continue
+                
             if s_per_buffer == 1:
                 buffer_in       = np.expand_dims(buffer_in, 1)
 
@@ -136,10 +166,6 @@ class Sampling():
             # This will generate unchanged time_stamps for all samples of 
             # the incoming bufer (= 10 in case of bluetooth), but that is
             # not a problem
-
-            # Construct relay message -------------------------------------
-            raw_message = raw_message[:1] + '"t":' + str(time_stamp_now) + ',' + raw_message[1:]
-            self.send_sock.sendto(bytes(raw_message, "utf-8"), (self.udp_ip, self.udp_port))
 
             # Each channel carries self.s_per_buffer amounts of samples
             for iS in range(s_per_buffer):
@@ -151,7 +177,6 @@ class Sampling():
                 # Convert binary to voltage values
                 for iBin in range(sample.size):
                     sample[iBin] = self.bin_to_voltage(sample[iBin])
-                print(sample)
 
                 update_buffer   = np.concatenate((self.buffer, np.expand_dims(sample, 1)), axis=1)
                 update_times    = np.append(self.time_stamps, time_stamp_now)
@@ -159,6 +184,13 @@ class Sampling():
                 # Build new buffer and timestamp arrays
                 self.buffer     = update_buffer[:, 1:]
                 self.time_stamps= update_times[1:]
+
+                # Construct relay message -------------------------------------
+                relay_message["t"]  = str(time_stamp_now)
+                relay_message["c1"] = str(sample[0])
+                relay_message["c2"] = str(sample[1])
+
+                self.send_sock.sendto(bytes(json.dumps(relay_message), "utf-8"), (self.udp_ip, self.udp_port))
 
                 pipe_conn.send((self.buffer, time_stamp_now))
 

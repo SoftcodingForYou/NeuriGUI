@@ -1,5 +1,5 @@
 #Board unit-specific parameters
-HELMENTID       = '7&2F45FB97&0&24D7EBA43B56_C00000000' # The unique ID of the board (str)
+HELMENTID       = '7&2F45FB97&0&7C9EBDABB922_C00000000' # The unique ID of the board (str)
 
 #Session-specific parameters
 yrange          = [-500, 500] # List of scalars ([negative, positive]) in order to set figure y axis range
@@ -10,7 +10,7 @@ buffer_channels = 2 #scalar
 buffer_length   = 20 #scalar (seconds)
 buffer_add      = 4 #scalar (seconds), we add this to the buffer for filtering to avoid edge artifacts
 sample_count    = 0 #integer zero
-saving_interval = 1 #scarlar (seconds)
+saving_interval = 1 #scalar (seconds)
 PGA             = 24 #scalar
 
 #Signal reception

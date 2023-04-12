@@ -124,7 +124,10 @@ class Sampling():
             
             # Handle JSON samples and add to signal buffer ----------------
             eeg_data_line       = json.loads(raw_message)
-            buffer_in           = np.array([eeg_data_line["c1"],eeg_data_line["c2"]])
+
+            # Crucial to specify "float" in next line since bin_to_voltage
+            # function will otherwise return integers
+            buffer_in           = np.array([eeg_data_line["c1"],eeg_data_line["c2"]], dtype=float)
             if s_per_buffer == 1:
                 buffer_in       = np.expand_dims(buffer_in, 1)
 
@@ -148,6 +151,7 @@ class Sampling():
                 # Convert binary to voltage values
                 for iBin in range(sample.size):
                     sample[iBin] = self.bin_to_voltage(sample[iBin])
+                print(sample)
 
                 update_buffer   = np.concatenate((self.buffer, np.expand_dims(sample, 1)), axis=1)
                 update_times    = np.append(self.time_stamps, time_stamp_now)

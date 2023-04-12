@@ -7,7 +7,7 @@ yrange          = [-500, 500] # List of scalars ([negative, positive]) in order 
 #Signal arrays
 sample_rate     = 200 #Hertz
 buffer_channels = 2 #scalar
-buffer_length   = 10 #scalar (seconds)
+buffer_length   = 20 #scalar (seconds)
 buffer_add      = 4 #scalar (seconds), we add this to the buffer for filtering to avoid edge artifacts
 sample_count    = 0 #integer zero
 saving_interval = 1 #scarlar (seconds)

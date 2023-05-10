@@ -153,7 +153,17 @@ class Sampling():
                     # integers
                     buffer_in       = np.array([eeg_data_line["c1"],eeg_data_line["c2"]], dtype=float)
                     break
-                except json.JSONDecodeError: # NEEDS COMPLETION IN CASE OF KEY ERROR c1 and c2
+                except json.JSONDecodeError or ValueError:
+                    # This is occuring quite often:
+                    # - Keys c1 and c2 not in message
+                    # - ValueError: setting an array element with a
+                    #   sequence. The requested array has an inhomogeneous
+                    #   shape after 1 dimensions where not all keys have 
+                    #   same number of values (ie {'c1': [15171215, 
+                    #   15171058, 15171058, 15170861, 15170861, 15170541, 
+                    #   15170541, 15170379, 15170379, 15170367], 
+                    #   'c2': [14440823, 14440652, 14440652, 1444014440469,
+                    #   14440172, 14440172, 14440010, 14440010, 14440002]})
                     # Take advantage and reset message queue
                     ser.read(ser.inWaiting())
                     continue

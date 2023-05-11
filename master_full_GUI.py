@@ -96,29 +96,34 @@ class MainWindow(Processing):
         self.frameYRange.grid(row=1, column=2)
         self.frameYRange = tk.LabelFrame(self.frameYRange, text='Vert. range (uV)',
             padx=0, pady=0)
+        
+        self.frameVDisp  = tk.Label(self.master, bg='#dddddd')
+        self.frameVDisp.grid(row=1, column=3)
+        self.frameVDisp  = tk.LabelFrame(self.frameVDisp, text='Maximum (uV)',
+            padx=0, pady=0)
 
         self.frameNotch = tk.Label(self.master, bg='#dddddd')
-        self.frameNotch.grid(row=1, column=3)
+        self.frameNotch.grid(row=1, column=4)
         self.frameNotch = tk.LabelFrame(self.frameNotch, text='Notch filter',
             padx=0, pady=0)
 
         self.frameBandpass = tk.Label(self.master, bg='#dddddd')
-        self.frameBandpass.grid(row=1, column=4)
+        self.frameBandpass.grid(row=1, column=5)
         self.frameBandpass = tk.LabelFrame(self.frameBandpass, text='Bandpass (Hz)',
             padx=0, pady=0)
 
         self.frameEnvelope = tk.Label(self.master, bg='#dddddd')
-        self.frameEnvelope.grid(row=1, column=5)
+        self.frameEnvelope.grid(row=1, column=6)
         self.frameEnvelope = tk.LabelFrame(self.frameEnvelope, text='Display envelope',
             padx=0, pady=0)
 
         self.frameStream = tk.Label(self.master, bg='#dddddd')
-        self.frameStream.grid(row=1, column=6)
+        self.frameStream.grid(row=1, column=7)
         self.frameStream = tk.LabelFrame(self.frameStream, text='Start/Stop data stream',
             padx=0, pady=0)
 
         self.frameSignal = tk.Label(self.master, bg='#dddddd')
-        self.frameSignal.grid(row=2, column=1, columnspan=6)
+        self.frameSignal.grid(row=2, column=1, columnspan=7)
         self.frameSignal = tk.LabelFrame(self.frameSignal, text='Data stream',
             padx=0, pady=0)
 
@@ -126,6 +131,8 @@ class MainWindow(Processing):
         notch           = tk.IntVar()
         bpass           = tk.StringVar()
         yran            = tk.StringVar()
+        self.currran    = tk.StringVar()
+        self.currran.set('c1: ' + str(round(self.yrange[1])) + '\nc2: ' + str(round(self.yrange[1])))
         self.stream     = tk.StringVar()
         self.stream.set('Stop')
         self.streaming  = True
@@ -152,6 +159,10 @@ class MainWindow(Processing):
             variable=yran, value='Auto',
             command=partial(self.yrange_selection, yran)).grid(row=1, column=5)
         self.frameYRange.grid(row=1, columnspan=1, padx= 0)
+
+        tk.Label(self.frameVDisp, textvariable=self.currran).grid(row=1, column=1)
+        self.frameVDisp.grid(row=1, columnspan=1, padx= 0)
+        
 
         tk.Radiobutton(self.frameNotch, text='50 Hz',
             variable=notch, value=50,
@@ -253,6 +264,8 @@ class MainWindow(Processing):
         # renderer to the GUI framework so you can see it
         self.fig.canvas.blit(self.fig.bbox)
 
+        vrange = [self.yrange[1], self.yrange[1]]
+
         while not self.recv_conn.closed: # Update plots for every channel
 
             buffer, t_now   = self.recv_conn.recv()
@@ -303,13 +316,18 @@ class MainWindow(Processing):
                         np.abs(np.min(self.y[iChan])),
                         np.abs(np.max(self.y[iChan]))])
                     self.ax[iChan].set_ylim((-extr_val, extr_val))
+                    vrange[iChan] = round(extr_val)
                 else:
                     self.ax[iChan].set_ylim(self.yrange)
+                    vrange[iChan] = round(self.yrange[1])
 
                 # re-render the artist, updating the canvas state, but not the screen
                 self.ax[iChan].draw_artist(sampleplot[iChan])
                 # The below line updates the x-axis but is slowing down the code a lot
                 # self.ax[iChan].draw_artist(self.ax[iChan])
+
+            # Display current signal amplitude in time window
+            self.update_disp_vrange(self.currran, vrange)
 
             # Update plot time stamp and figure
             # -------------------------------------------------------------
@@ -367,6 +385,10 @@ class MainWindow(Processing):
         elif choice == 'Auto':
             print('Vertical range set relative to signal')
             self.yrange = None
+
+
+    def update_disp_vrange(self, target, values):
+        target.set('c1: ' + str(values[0]) + '\nc2: ' + str(values[1]))
 
 
     def disp_envelope(self, button):

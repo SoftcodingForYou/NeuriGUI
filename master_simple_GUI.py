@@ -32,15 +32,6 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         confboard           = ConfigureBoard()  # Board communication
         sigproc             = Sampling()        # Signal handling
 
-        # Listen to user input for setting state of board
-        # -----------------------------------------------------------------
-        current_state = -1 # Value that does nothing
-        print('Waiting for input: Numerical key stroke...')
-        while True:
-            current_state = confboard.query_input()
-            if current_state == 2 or current_state == 3:
-                break
-
         # Generate variable exchange pipe
         # -----------------------------------------------------------------
         self.recv_conn, self.send_conn = Pipe(duplex = False)
@@ -50,9 +41,9 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         # -----------------------------------------------------------------
         self.sampling    = Process(target=sigproc.fetch_sample,
             args=(self.send_conn, confboard.ser, 
-            confboard.av_ports, current_state))
+            confboard.av_ports, confboard.des_state))
         
-        if current_state == 2 or current_state == 3:
+        if confboard.des_state == 2 or confboard.des_state == 3:
             self.sampling.start()
 
         # Build GUI

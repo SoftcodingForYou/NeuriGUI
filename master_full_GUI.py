@@ -37,20 +37,20 @@ class MainWindow(Processing):
 
         self.get_screen_info()
 
+        # Build main GUI window: long process
+        # -----------------------------------------------------------------
+        self.build_frontend()
+
         # Splash screen
         # -----------------------------------------------------------------
         splash = self.disp_splash()
+        splash.update()
 
-        # Load methods
+        # Load methods and build communication with EEG board
         # -----------------------------------------------------------------
         ParamVal()                              # Sanity checks
         confboard           = ConfigureBoard()  # Board communication
         sigproc             = Sampling()        # Signal handling
-
-        # Listen to user input for setting state of board
-        # -----------------------------------------------------------------
-        splash.update()
-        splash.after(0, self.on_start(splash, confboard))
 
         # Generate variable exchange pipe
         # -----------------------------------------------------------------
@@ -61,13 +61,14 @@ class MainWindow(Processing):
         # -----------------------------------------------------------------
         self.sampling    = Process(target=sigproc.fetch_sample,
             args=(self.send_conn, confboard.ser, 
-            confboard.av_ports, self.current_state))
+            confboard.av_ports, confboard.des_state))
         
-        if self.current_state == 2 or self.current_state == 3:
+        # Start sampling and visualization
+        # -----------------------------------------------------------------
+        if confboard.des_state == 2 or confboard.des_state == 3:
             self.sampling.start()
-
-        self.build_frontend()
-        self.update_plot_data(self.canvas)
+        splash.after(10000, lambda: splash.destroy())
+        self.update_plot_data(self.canvas, self.sampleplot)
 
 
     def build_frontend(self):
@@ -85,7 +86,7 @@ class MainWindow(Processing):
         
         # multiple image size by zoom
         pixels_x, pixels_y = tuple([int(0.01 * x) for x in Image.open(self.img_helment).size])
-        img = ImageTk.PhotoImage(Image.open(self.img_helment).resize((pixels_x, pixels_y)))
+        img = ImageTk.PhotoImage(Image.open(self.img_helment).resize((pixels_x, pixels_y)), master=self.master)
         self.frameLogo = tk.Label(self.master, image=img, bg='#dddddd')
         self.frameLogo.image = img
         self.frameLogo.grid(row=1, column=1)
@@ -186,15 +187,10 @@ class MainWindow(Processing):
         tk.Button(self.frameStream, textvariable=self.stream, command=self.streamstate).pack()
         self.frameStream.pack()
 
-        self.x = list(range(-self.numsamples, 0, self.s_down))
-        self.x = [x/self.samplerate for x in self.x]
-        self.y = []
-        for _ in range(self.numchans):
-            self.y.append([0 for _ in range(0, self.numsamples, self.s_down)])
 
-        self.fig, self.ax   = plt.subplots(self.numchans, 1,
-            figsize=(self.screen_width*0.7/80, self.screen_height*0.7/80), dpi=80)
-        self.fig.tight_layout() # Reduce whitespace of the figure
+        # Initialize figure
+        # -----------------------------------------------------------------
+        _           = self.init_figure()
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frameSignal)
         plot_widget = self.canvas.get_tk_widget()
@@ -202,13 +198,23 @@ class MainWindow(Processing):
         self.frameSignal.grid(row=0, column=0, columnspan=5)
 
 
-    def update_plot_data(self, canvas):
+    def init_figure(self):
 
-        sampleplot      = {}
+        self.x      = list(range(-self.numsamples, 0, self.s_down))
+        self.x      = [x/self.samplerate for x in self.x]
+        self.y      = []
+        for _ in range(self.numchans):
+            self.y.append([0 for _ in range(0, self.numsamples, self.s_down)])
+
+        self.fig, self.ax   = plt.subplots(self.numchans, 1,
+            figsize=(self.screen_width*0.7/80, self.screen_height*0.7/80), dpi=80)
+        self.fig.tight_layout() # Reduce whitespace of the figure
+
+        self.sampleplot      = {}
         for iChan in range(self.numchans):
             if iChan == 0:
                 self.ax[iChan].set_title('Time (s)')
-            sampleplot[iChan], = self.ax[iChan].plot(
+            self.sampleplot[iChan], = self.ax[iChan].plot(
                 self.x, self.y[iChan], linestyle='None', animated=True)
             self.ax[iChan].set_ylabel('Amp. (uV)')
             self.ax[iChan].set_ylim(
@@ -227,7 +233,7 @@ class MainWindow(Processing):
                 linestyle=':', alpha=0.5)
 
         for iChan in range(self.numchans):
-            sampleplot[iChan].set_linestyle('-')
+            self.sampleplot[iChan].set_linestyle('-')
             self.ax[iChan].set_xticks(xrange)
             if iChan == self.numchans-1:
                 self.ax[iChan].set_xticklabels(xrange)
@@ -240,6 +246,10 @@ class MainWindow(Processing):
                 self.yrange[1]/2,
                 self.yrange[1]])
             self.ax[iChan].set_yticklabels([])
+
+
+    def update_plot_data(self, canvas, sampleplot):
+        
         canvas.draw()
 
         # get copy of entire figure (everything inside fig.bbox) sans animated artist
@@ -401,7 +411,7 @@ class MainWindow(Processing):
 
         # multiple image size by zoom
         pixels_x, pixels_y = tuple([int(0.10 * x) for x in Image.open(self.img_helment).size])
-        img = ImageTk.PhotoImage(Image.open(self.img_helment).resize((pixels_x, pixels_y)))
+        img = ImageTk.PhotoImage(Image.open(self.img_helment).resize((pixels_x, pixels_y)), master=root)
 
         x_cordinate = int((self.screen_width/2) - (pixels_x/2))
         y_cordinate = int((self.screen_height/2) - (pixels_y/2))

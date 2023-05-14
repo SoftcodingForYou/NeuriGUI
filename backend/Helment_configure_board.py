@@ -1,16 +1,13 @@
 import serial #Crucial: Install using pip3 install "pyserial", NOT "serial"
 import serial.tools.list_ports
 import parameters                   as p
+import time
 from encodings                      import utf_8
 
 
 class ConfigureBoard:
 
     def __init__(self):
-
-        # Possible key presses to set board state
-        self.states         = ["1", "2", "3", "4", "5"] # List of strings
-        self.id             = p.HELMENTID
 
         self.search_device()
         self.connect_board()
@@ -31,17 +28,34 @@ class ConfigureBoard:
         # Look for device
         # -----------------------------------------------------------------
         ports = list(serial.tools.list_ports.comports())
-        
+
+        dummyser                = serial.Serial()
+        dummyser.baudrate       = p.baud_rate
+        dummyser.timeout        = 1
+        dummyser.write_timeout  = 1
         for port in ports:
-            print(str(port) + ' - ' + port.hwid)
-            if self.id in port.hwid:
-                # Bluetooth device query
-                self.av_ports["BT"] = port.device
-                print('Found Helment connected via Bluetooth')
-            elif 'UART Bridge' in port.description:
-                # USB device query
+            if 'UART Bridge' in port.description:
                 self.av_ports["USB"] = port.device
                 print('Found Helment connected via USB')
+                continue
+            else:
+                # Testing for Bluetooth device
+                dummyser.port   = port.device
+                print('Searching for Neuri via Bluetooth on ' + port.device)
+                dummyser.open()
+                try:
+                    time.sleep(1)
+                    dummyser.write(bytes(str(int(3)), 'utf-8')) # Force BT state on board
+                    for _ in range(1000):
+                        line = str(dummyser.readline())
+                        if '{"c1":' in line and '"c2":' in line:
+                            self.av_ports["BT"] = port.device
+                            print('Found Helment connected via Bluetooth')
+                            break
+                except:
+                    pass
+                dummyser.read(dummyser.inWaiting()) # Eliminate message queue at port
+                dummyser.close() # Necessary to lierate board
 
         if all(val == None for val in list(self.av_ports.values())):
             raise Exception('Device could not be found')
@@ -102,6 +116,7 @@ class ConfigureBoard:
         # Make board aware of key press: Set state of board
         state = bytes(str(state), 'utf-8')
         self.ser.write(state)
+        self.ser.read(self.ser.inWaiting()) # Eliminate message queue at port
         self.ser.close()
         print('Communicated changes to board')
 

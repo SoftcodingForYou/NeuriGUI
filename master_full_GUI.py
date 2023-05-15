@@ -49,7 +49,11 @@ class MainWindow(Processing):
         # -----------------------------------------------------------------
         ParamVal()                              # Sanity checks
         confboard           = ConfigureBoard()  # Board communication
-        sigproc             = Sampling()        # Signal handling
+        sampl               = Sampling()        # Signal handling
+
+        # Permanently display information about data stream
+        # -----------------------------------------------------------------
+        self.master.title('Helment EEG GUI (raw data available at {}:{})'.format(sampl.udp_ip, sampl.udp_port))
 
         # Generate variable exchange pipe
         # -----------------------------------------------------------------
@@ -58,7 +62,7 @@ class MainWindow(Processing):
         # Generate separate processes to not slow down sampling by any
         # other executions
         # -----------------------------------------------------------------
-        self.sampling    = Process(target=sigproc.fetch_sample,
+        self.sampling    = Process(target=sampl.fetch_sample,
             args=(self.send_conn, confboard.ser, 
             confboard.av_ports, confboard.des_state))
         
@@ -74,7 +78,7 @@ class MainWindow(Processing):
         # Build GUI
         # -----------------------------------------------------------------
         self.master = tk.Tk()
-        self.master.title('Helment EEG GUI')
+        self.master.title('')
         pixels_x, pixels_y          = int(round(0.71*self.screen_width)), int(round(0.8*self.screen_height))
         x_cordinate, y_cordinate    = int((self.screen_width/2) - (pixels_x/2)), int(0)
         self.master.geometry("{}x{}+{}+{}".format(pixels_x, pixels_y, x_cordinate, y_cordinate))
@@ -321,14 +325,16 @@ class MainWindow(Processing):
 
                 # Set vertical range
                 if self.yrange == None:
-                    extr_val = np.max([
-                        np.abs(np.min(self.y[iChan])),
-                        np.abs(np.max(self.y[iChan]))])
-                    self.ax[iChan].set_ylim((-extr_val, extr_val))
-                    vrange[iChan] = round(extr_val)
+                    vscale = [-np.max([np.abs(np.min(self.y[iChan])), np.abs(np.max(self.y[iChan]))]),
+                              np.max([np.abs(np.min(self.y[iChan])), np.abs(np.max(self.y[iChan]))])]
                 else:
-                    self.ax[iChan].set_ylim(self.yrange)
-                    vrange[iChan] = round(self.yrange[1])
+                    vscale = self.yrange
+
+                if self.envelope == True:
+                    self.ax[iChan].set_ylim([0, vscale[1]])
+                else:
+                    self.ax[iChan].set_ylim(vscale)
+                vrange[iChan] = round(vscale[1])
 
                 # re-render the artist, updating the canvas state, but not the screen
                 self.ax[iChan].draw_artist(sampleplot[iChan])

@@ -50,8 +50,7 @@ class Sampling():
         self.send_sock  = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
         print('Relay connection established at ' + self.udp_ip + ':' + str(self.udp_port))
         print('Use this connection to import signals in your own program!\n')
-        time.sleep(2)
-
+    
 
     def search_free_com(self, ip):
 
@@ -63,6 +62,7 @@ class Sampling():
                 return iPort
 
         raise Exception('No available UDP port found for signal relay')
+
 
     def bin_to_voltage(self, s_bin):
         # =================================================================

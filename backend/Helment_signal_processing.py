@@ -8,6 +8,7 @@ class Processing():
     def __init__(self):
 
         self.prepare_filters()
+        self.numchans           = p.buffer_channels
 
 
     def prepare_filters(self):

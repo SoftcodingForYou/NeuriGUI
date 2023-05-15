@@ -25,7 +25,6 @@ class MainWindow(Processing):
 
         # Load parameters
         # -----------------------------------------------------------------
-        self.numchans       = p.buffer_channels
         self.numsamples     = int(p.sample_rate * p.buffer_length)
         self.left_edge      = int(p.sample_rate * p.buffer_add)
         self.samplerate     = p.sample_rate
@@ -33,7 +32,7 @@ class MainWindow(Processing):
         self.s_down         = p.s_down
         self.idx_retain     = range(0, int(p.sample_rate * p.buffer_length), p.s_down)
         self.yrange         = p.yrange
-        self.img_helment    = './backend/Isotipo-Helment-color.png'
+        self.img_helment    = './frontend/Isotipo-Helment-color.png'
 
         self.get_screen_info()
 
@@ -67,7 +66,7 @@ class MainWindow(Processing):
         # -----------------------------------------------------------------
         if confboard.des_state == 2 or confboard.des_state == 3:
             self.sampling.start()
-        splash.after(10000, lambda: splash.destroy())
+        splash.after(6000, lambda: splash.destroy())
         self.update_plot_data(self.canvas, self.sampleplot)
 
 
@@ -201,7 +200,7 @@ class MainWindow(Processing):
 
         # Initialize figure
         # -----------------------------------------------------------------
-        _           = self.init_figure()
+        self.init_figure()
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frameSignal)
         plot_widget = self.canvas.get_tk_widget()

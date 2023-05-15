@@ -35,8 +35,6 @@ class Sampling():
         self.time_reset         = self.py_start
         self.sample_rate        = p.sample_rate
 
-        self.numchans   = p.buffer_channels
-
         # Build relay connection for other programs
         self.build_relay(p.udp_ip)
 

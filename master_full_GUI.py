@@ -86,6 +86,12 @@ class MainWindow(Processing):
         self.master.lift()
         self.master.attributes("-topmost", True)
         self.master.after_idle(self.master.attributes, '-topmost', False)
+
+        # Set closing sequence
+        # -----------------------------------------------------------------
+        # Just closing the window makes the sampling process hang. We 
+        # prevent this by setting up a protocol.
+        self.master.protocol('WM_DELETE_WINDOW', self.on_closing)
         
         # multiple image size by zoom
         pixels_x, pixels_y = tuple([int(0.01 * x) for x in Image.open(self.img_helment).size])
@@ -489,8 +495,10 @@ class MainWindow(Processing):
 
     def on_closing(self):
         # Currently not working for unknown reason
-        if messagebox.askokcancel("Quit", "Do you want to quit?"):
+        if messagebox.askokcancel("Quit", "Do you really want to quit?"):
+            self.recv_conn.close() # It is enough to close one end of the pipe
             self.master.destroy()
+            quit()
 
 
 if __name__ == '__main__': # Necessary line for "multiprocessing" to work

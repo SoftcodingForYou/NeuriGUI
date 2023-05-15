@@ -126,7 +126,7 @@ class Sampling():
 
         ser.read(ser.inWaiting()) # Eliminate message queue at port
             
-        while True:
+        while not ser.closed:
             
             correct_message         = False
             while not correct_message:

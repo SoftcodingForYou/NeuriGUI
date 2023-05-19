@@ -67,6 +67,12 @@ class Sampling():
     def bin_to_voltage(self, s_bin):
         # =================================================================
         # Convert binary into volts
+        # Input
+        #   s_bin       Float (binary) (crucial to be float, otherwise the 
+        #               output "voltage" will be integer event if 
+        #               method returns voltage as float)
+        # Output
+        #   - voltage   Float (microvolts)
         # =================================================================
         s_bin       = int(s_bin) # requieres int
         sign_bit    = 0

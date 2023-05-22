@@ -11,6 +11,7 @@ from sys                                    import platform
 import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg      import FigureCanvasTkAgg
+from tkinter                                import ttk
 import matplotlib.pyplot                    as plt
 import numpy                                as np
 import tkinter                              as tk
@@ -42,14 +43,16 @@ class MainWindow(Processing):
 
         # Splash screen
         # -----------------------------------------------------------------
-        splash = self.disp_splash()
-        splash.update()
+        splash, pb = self.disp_splash()
+        self.report_progress(splash, pb, 10)
 
         # Load methods and build communication with EEG board
         # -----------------------------------------------------------------
         ParamVal()                              # Sanity checks
         confboard           = ConfigureBoard()  # Board communication
+        self.report_progress(splash, pb, 30)
         sampl               = Sampling()        # Signal handling
+        self.report_progress(splash, pb, 10)
 
         # Permanently display information about data stream
         # -----------------------------------------------------------------
@@ -65,12 +68,14 @@ class MainWindow(Processing):
         self.sampling    = Process(target=sampl.fetch_sample,
             args=(self.send_conn, confboard.ser, 
             confboard.av_ports, confboard.des_state))
+        self.report_progress(splash, pb, 20)
         
         # Start sampling and visualization
         # -----------------------------------------------------------------
         if confboard.des_state == 2 or confboard.des_state == 3:
             self.sampling.start()
-        splash.after(6000, lambda: splash.destroy())
+        splash.after(1000, lambda: self.report_progress(splash, pb, 29))
+        splash.after(3000, lambda: splash.destroy())
         self.update_plot_data(self.canvas, self.sampleplot)
 
 
@@ -139,8 +144,8 @@ class MainWindow(Processing):
 
         # Define inputs from GUI elements
         notch           = tk.IntVar()
-        bpass           = tk.StringVar()
-        yran            = tk.StringVar()
+        bpass           = tk.IntVar()
+        yran            = tk.IntVar()
         self.currran    = tk.StringVar()
         self.currran.set('c1: ' + str(round(self.yrange[1])) + '\nc2: ' + str(round(self.yrange[1])))
         self.stream     = tk.StringVar()
@@ -153,49 +158,61 @@ class MainWindow(Processing):
         self.aPB        = self.a_wholerange
         envelope        = tk.BooleanVar()
 
+        # Vertical range
+        # -----------------------------------------------------------------
+        tk.Radiobutton(self.frameYRange, text='Auto',
+            variable=yran, value=0,
+            command=partial(self.yrange_selection, yran)).grid(row=1, column=1)
         tk.Radiobutton(self.frameYRange, text='100',
             variable=yran, value=100,
-            command=partial(self.yrange_selection, yran)).grid(row=1, column=1)
+            command=partial(self.yrange_selection, yran)).grid(row=1, column=2)
         tk.Radiobutton(self.frameYRange, text='200',
             variable=yran, value=200,
-            command=partial(self.yrange_selection, yran)).grid(row=1, column=2)
+            command=partial(self.yrange_selection, yran)).grid(row=1, column=3)
         tk.Radiobutton(self.frameYRange, text='500',
             variable=yran, value=500,
-            command=partial(self.yrange_selection, yran)).grid(row=1, column=3)
+            command=partial(self.yrange_selection, yran)).grid(row=1, column=4)
         tk.Radiobutton(self.frameYRange, text='1000',
             variable=yran, value=1000,
-            command=partial(self.yrange_selection, yran)).grid(row=1, column=4)
-        tk.Radiobutton(self.frameYRange, text='Auto',
-            variable=yran, value='Auto',
             command=partial(self.yrange_selection, yran)).grid(row=1, column=5)
         self.frameYRange.grid(row=1, columnspan=1, padx= 0)
 
+        # Current amplitude display
+        # -----------------------------------------------------------------
         tk.Label(self.frameVDisp, textvariable=self.currran).grid(row=1, column=1)
         self.frameVDisp.grid(row=1, columnspan=1, padx= 0)
-        
 
-        tk.Radiobutton(self.frameNotch, text='50 Hz',
-            variable=notch, value=50,
-            command=partial(self.filt_selection, notch)).grid(row=1, column=1)
-        tk.Radiobutton(self.frameNotch, text='60 Hz',
-            variable=notch, value=60,
-            command=partial(self.filt_selection, notch)).grid(row=1, column=2)
+        # Notch filter state
+        # -----------------------------------------------------------------
         tk.Radiobutton(self.frameNotch, text='Off',
             variable=notch, value=0,
-            command=partial(self.filt_selection, notch)).grid(row=1, column=3)
+            command=partial(self.filt_noise, notch)).grid(row=1, column=1)
+        tk.Radiobutton(self.frameNotch, text='50 Hz',
+            variable=notch, value=50,
+            command=partial(self.filt_noise, notch)).grid(row=1, column=2)
+        tk.Radiobutton(self.frameNotch, text='60 Hz',
+            variable=notch, value=60,
+            command=partial(self.filt_noise, notch)).grid(row=1, column=3)
         self.frameNotch.grid(row=1, columnspan=1, padx=0)
 
+        # Bandpass filter state
+        # -----------------------------------------------------------------
+        tk.Radiobutton(self.frameBandpass, text='Raw', 
+            variable=bpass, value=0,
+            command=partial(self.filt_bandpass, bpass)).grid(row=1, column=1)
         tk.Radiobutton(self.frameBandpass, text='0.5 - 45', 
-            variable=bpass, value='whole',
-            command=partial(self.filt_selection, bpass)).grid(row=1, column=1)
+            variable=bpass, value=1,
+            command=partial(self.filt_bandpass, bpass)).grid(row=1, column=2)
         tk.Radiobutton(self.frameBandpass, text='1 - 30',
-            variable=bpass, value='sleep',
-            command=partial(self.filt_selection, bpass)).grid(row=1, column=2)
+            variable=bpass, value=2,
+            command=partial(self.filt_bandpass, bpass)).grid(row=1, column=3)
         tk.Radiobutton(self.frameBandpass, text='4 - 8',
-            variable=bpass, value='theta',
-            command=partial(self.filt_selection, bpass)).grid(row=1, column=3)
+            variable=bpass, value=3,
+            command=partial(self.filt_bandpass, bpass)).grid(row=1, column=4)
         self.frameBandpass.grid(row=1, columnspan=1, padx=0)
-
+        
+        # Envelope computation state
+        # -----------------------------------------------------------------
         tk.Radiobutton(self.frameEnvelope, text='Off', 
             variable=envelope, value=False,
             command=partial(self.disp_envelope, envelope)).grid(row=1, column=1)
@@ -207,6 +224,12 @@ class MainWindow(Processing):
         tk.Button(self.frameStream, textvariable=self.stream, command=self.streamstate).pack()
         self.frameStream.pack()
 
+        # Circumvent bug where radio buttons had wrong selections not 
+        # corresponding to actual selections
+        bpass.set(0)
+        notch.set(0)
+        yran.set(1000)
+        envelope.set(False)
 
         # Initialize figure
         # -----------------------------------------------------------------
@@ -330,7 +353,7 @@ class MainWindow(Processing):
                 self.ax[iChan].set_xlim((x0, xend))
 
                 # Set vertical range
-                if self.yrange == None:
+                if self.yrange[1] == 0:
                     vscale = [-np.max([np.abs(np.min(self.y[iChan])), np.abs(np.max(self.y[iChan]))]),
                               np.max([np.abs(np.min(self.y[iChan])), np.abs(np.max(self.y[iChan]))])]
                 else:
@@ -359,30 +382,39 @@ class MainWindow(Processing):
             self.count          = 0
 
 
-    def filt_selection(self, button):
+    def filt_noise(self, button):
         choice = button.get()
-        choice = str(choice)
-        if choice == '50':
+        choice = int(choice)
+        if choice == 50:
             print('Enabled 50 Hz stopband filter')
             self.bSB    = self.b_notch
             self.aSB    = self.a_notch
-        elif choice == '60':
+        elif choice == 60:
             print('Enabled 60 Hz stopband filter')
             self.bSB    = self.b_notch60
             self.aSB    = self.a_notch60
-        elif choice == '0':
+        elif choice == 0:
             print('Notch filter disabled')
             self.bSB    = np.array([None, None]) # Avoiding bool not iterable
             self.aSB    = np.array([None, None])
-        elif choice == 'whole':
+
+
+    def filt_bandpass(self, button):
+        choice = button.get()
+        choice = int(choice)
+        if choice == 0:
+            print('Highpass filter from 0.1 Hz')
+            self.bPB        = self.b_detrend
+            self.aPB        = self.a_detrend
+        elif choice == 1:
             print('Bandpass filter between 0.1 and 45 Hz')
             self.bPB        = self.b_wholerange
             self.aPB        = self.a_wholerange
-        elif choice == 'sleep':
+        elif choice == 2:
             print('Bandpass filter between 1 and 30 Hz')
             self.bPB        = self.b_sleep
             self.aPB        = self.a_sleep
-        elif choice == 'theta':
+        elif choice == 3:
             print('Bandpass filter between 4 and 8 Hz')
             self.bPB        = self.b_theta
             self.aPB        = self.a_theta
@@ -390,22 +422,22 @@ class MainWindow(Processing):
 
     def yrange_selection(self, button):
         choice = button.get()
-        choice = str(choice)
-        if choice == '100':
+        choice = int(choice)
+        if choice == 100:
             print('Vertical range set to -100 uV to +100 uV')
             self.yrange = (-100, 100)
-        elif choice == '200':
+        elif choice == 200:
             print('Vertical range set to -200 uV to +200 uV')
             self.yrange = (-200, 200)
-        elif choice == '500':
+        elif choice == 500:
             print('Vertical range set to -500 uV to +500 uV')
             self.yrange = (-500, 500)
-        elif choice == '1000':
+        elif choice == 1000:
             print('Vertical range set to -1000 uV to +1000 uV')
             self.yrange = (-1000, 1000)
-        elif choice == 'Auto':
+        elif choice == 0:
             print('Vertical range set relative to signal')
-            self.yrange = None
+            self.yrange = (-0, 0)
 
 
     def update_disp_vrange(self, target, values):
@@ -451,6 +483,9 @@ class MainWindow(Processing):
 
         root.geometry("{}x{}+{}+{}".format(pixels_x, pixels_y, x_cordinate, y_cordinate))
 
+        pb          = ttk.Progressbar(root, orient='horizontal', length=pixels_x, mode='determinate')
+        pb.pack()
+
         if platform == "linux" or platform == "linux2":
             root.overrideredirect(True)
             root.wait_visibility(root)
@@ -480,7 +515,13 @@ class MainWindow(Processing):
             root.wm_attributes("-transparentcolor", "white")
             label.pack()
 
-        return root
+        return root, pb
+    
+
+    def report_progress(self, target, pb, increment):
+        target.attributes('-topmost', True)
+        pb.step(increment)
+        target.update()
 
 
     def on_start(self, win, config):

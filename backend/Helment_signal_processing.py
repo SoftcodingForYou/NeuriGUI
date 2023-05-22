@@ -15,6 +15,9 @@ class Processing():
 
         # Bandpass filters
         # -----------------------------------------------------------------
+        self.b_detrend, self.a_detrend          = scipy.signal.butter(
+            p.filter_order, p.frequency_bands["Whole"][0],
+            btype='highpass', fs=p.sample_rate)
         self.b_wholerange, self.a_wholerange    = scipy.signal.butter(
             p.filter_order, p.frequency_bands["Whole"],
             btype='bandpass', fs=p.sample_rate)
@@ -26,10 +29,10 @@ class Processing():
             btype='bandpass', fs=p.sample_rate)
         self.b_notch, self.a_notch              = scipy.signal.butter(
             p.filter_order, p.frequency_bands["LineNoise"],
-            btype='stop', fs=p.sample_rate)
+            btype='bandstop', fs=p.sample_rate)
         self.b_notch60, self.a_notch60          = scipy.signal.butter(
             p.filter_order, p.frequency_bands["LineNoise60"],
-            btype='stop', fs=p.sample_rate)
+            btype='bandstop', fs=p.sample_rate)
 
         # Determine padding length for signal filtering
         # -----------------------------------------------------------------

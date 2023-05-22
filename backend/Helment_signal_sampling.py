@@ -88,6 +88,88 @@ class Sampling():
         voltage = (4.5*sign_bit)/(self.pga*8388607.0)
         voltage = voltage * 1000000 # Convert to microvolts
         return voltage
+    
+
+    def data_checkpoint(self, str_message):
+        # -----------------------------------------------------------------
+        # Extract samples from board
+        # Input
+        #   str_message Raw message string coming from board
+        # Parameters
+        #   value_len   Length of string for each value to be expected
+        value_len       = 7
+        # Output
+        #   eeg_array   Numpy array (floats), being channels by samples
+        #   eeg_valid   Boolean whether workable data or not
+        # -----------------------------------------------------------------
+        
+        # Default in case of faulty message
+        eeg_array       = np.array(0, dtype=float)
+        eeg_valid       = False
+
+        # Basic checks
+        if 'c2' not in str_message:
+            return eeg_array, eeg_valid
+        
+
+        # Strip all non-json format characters
+        str_message     = str_message[2:]
+        str_message     = str_message.replace("\'", "")
+        str_message     = str_message.replace("\\r", "")
+        str_message     = str_message.replace("\\n", "")
+
+        # Crucial garbage removal
+        str_message     = str_message.replace("\"", "")
+        str_message     = str_message.replace("{", "")
+        str_message     = str_message.replace("}", "")
+        str_message     = str_message.replace(":", "")
+        str_message     = str_message.replace("c1", "")
+
+        # We can not dejonsize at that point because we want to check data 
+        # for each channel individually
+        chans           = str_message.split('c2')
+
+        # Hard-coding not possible because of potentially missing parts 
+        # from message
+        if chans[0].find('[') == -1:
+            c1_start    = 0
+        else:
+            c1_start    = chans[0].find('[')+1
+        c1_stop         = chans[0].find(']')
+
+        if chans[1].find('[') == -1:
+            c2_start    = 0
+        else:
+            c2_start    = chans[1].find('[')+1
+        c2_stop         = chans[1].find(']')
+
+        c1_vals         = chans[0][c1_start:c1_stop].split(',')
+        c2_vals         = chans[1][c2_start:c2_stop].split(',')
+
+        # Adapt amount of channel samples
+        num_c1          = len(c1_vals)
+        num_c2          = len(c2_vals)
+        s_samples       = min(num_c1, num_c2)
+
+        if s_samples < num_c1:
+            c1_vals     = c1_vals[0:s_samples]
+        elif s_samples < num_c2:
+            c2_vals     = c2_vals[0:s_samples]
+
+        # Search for faulty values
+        false_vals      = [i for i in range(len(c1_vals)) if len(c1_vals[i]) != value_len] + [i for i in range(len(c2_vals)) if len(c2_vals[i]) != value_len]
+        for iPop in range(len(c1_vals), 0, -1):
+            if iPop in false_vals:
+                c1_vals.pop(iPop)
+                c2_vals.pop(iPop)
+
+        if len(c1_vals) == 0:
+            return eeg_array, eeg_valid
+        
+        eeg_array       = np.array([c1_vals,c2_vals], dtype=float)
+        eeg_valid       = True
+        
+        return eeg_array, eeg_valid
 
 
     def fetch_sample(self, pipe_conn, ser, cons, desired_con):
@@ -106,10 +188,10 @@ class Sampling():
             raise Exception('Verify that desired connection type (USB or Bluetooth) are indeed available')
         else:
             ser.open()
-            time.sleep(5)
+            # time.sleep(5)
 
         ser.write(bytes(str(desired_con), 'utf-8'))
-        time.sleep(1)
+        # time.sleep(1)
 
         board_booting = True
         print('Board is booting up ...')
@@ -134,45 +216,12 @@ class Sampling():
             
         while not ser.closed:
             
-            correct_message         = False
-            while not correct_message:
-                raw_message     = str(ser.readline())
+            raw_message     = str(ser.readline())
 
-                # Strip all non-json format characters
-                raw_message     = raw_message[2:]
-                raw_message     = raw_message.replace("\'", "")
-                raw_message     = raw_message.replace("\\r", "")
-                raw_message     = raw_message.replace("\\n", "")
+            buffer_in, valid_eeg = self.data_checkpoint(raw_message)
 
-                # Handle JSON samples and add to signal buffer ----------------
-                try:
-                    # 1) In general, serial messages have to be expected to be 
-                    # incomplete and 2) Touching board components can lead to 
-                    # message corruption. We prevent code breakage when 
-                    # corrupted messages come in 
-                    eeg_data_line   = json.loads(raw_message)
-
-                    # Important to specify float as data type since 
-                    # otherwise, the bin_to_coltage function will return 
-                    # integers
-                    buffer_in       = np.array([eeg_data_line["c1"],eeg_data_line["c2"]], dtype=float)
-                    break
-
-                # Messages are often corrupted: Catch errors and step over
-                # since irrecoverable
-                except json.JSONDecodeError:
-                    # - Keys c1 and c2 not in message
-                    # Take advantage and reset message queue
-                    ser.read(ser.inWaiting())
-                    continue
-                except ValueError:
-                    # - different numbers of elements per channel
-                    # Take advantage and reset message queue
-                    ser.read(ser.inWaiting())
-                    continue
-                
-            if s_per_buffer == 1:
-                buffer_in       = np.expand_dims(buffer_in, 1)
+            if not valid_eeg:
+                continue
 
             # Current timestamp -------------------------------------------
             time_stamp_now  = round(time.perf_counter() * 1000, 0) - self.py_start
@@ -180,8 +229,11 @@ class Sampling():
             # the incoming bufer (= 10 in case of bluetooth), but that is
             # not a problem
 
-            # Each channel carries self.s_per_buffer amounts of samples
-            for iS in range(s_per_buffer):
+            # Each channel carries self.s_per_buffer amounts of samples 
+            # (theoretically). Since parts of messages can be lost, we 
+            # soft-set the amount of samples after checking for data 
+            # integrity during data_checkpoint()
+            for iS in range(buffer_in.shape[1]):
 
                 self.sample_count   = self.sample_count + 1
                 

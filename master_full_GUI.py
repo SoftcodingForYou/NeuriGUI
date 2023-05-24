@@ -198,17 +198,20 @@ class MainWindow(Processing):
         # Bandpass filter state
         # -----------------------------------------------------------------
         tk.Radiobutton(self.frameBandpass, text='Raw', 
-            variable=bpass, value=0,
+            variable=bpass, value=-1,
             command=partial(self.filt_bandpass, bpass)).grid(row=1, column=1)
+        tk.Radiobutton(self.frameBandpass, text='Detrend', 
+            variable=bpass, value=0,
+            command=partial(self.filt_bandpass, bpass)).grid(row=1, column=2)
         tk.Radiobutton(self.frameBandpass, text='0.5 - 45', 
             variable=bpass, value=1,
-            command=partial(self.filt_bandpass, bpass)).grid(row=1, column=2)
+            command=partial(self.filt_bandpass, bpass)).grid(row=1, column=3)
         tk.Radiobutton(self.frameBandpass, text='1 - 30',
             variable=bpass, value=2,
-            command=partial(self.filt_bandpass, bpass)).grid(row=1, column=3)
+            command=partial(self.filt_bandpass, bpass)).grid(row=1, column=4)
         tk.Radiobutton(self.frameBandpass, text='4 - 8',
             variable=bpass, value=3,
-            command=partial(self.filt_bandpass, bpass)).grid(row=1, column=4)
+            command=partial(self.filt_bandpass, bpass)).grid(row=1, column=5)
         self.frameBandpass.grid(row=1, columnspan=1, padx=0)
         
         # Envelope computation state
@@ -226,7 +229,7 @@ class MainWindow(Processing):
 
         # Circumvent bug where radio buttons had wrong selections not 
         # corresponding to actual selections
-        bpass.set(0)
+        bpass.set(-1)
         notch.set(0)
         yran.set(1000)
         envelope.set(False)
@@ -402,7 +405,11 @@ class MainWindow(Processing):
     def filt_bandpass(self, button):
         choice = button.get()
         choice = int(choice)
-        if choice == 0:
+        if choice == -1:
+            print('Displaying raw signal')
+            self.bPB        = np.array([None, None])
+            self.aPB        = np.array([None, None])
+        elif choice == 0:
             print('Highpass filter from 0.1 Hz')
             self.bPB        = self.b_detrend
             self.aPB        = self.a_detrend

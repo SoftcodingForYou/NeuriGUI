@@ -158,8 +158,15 @@ class Sampling():
 
         # Search for faulty values
         false_vals      = [i for i in range(len(c1_vals)) if len(c1_vals[i]) != value_len] + [i for i in range(len(c2_vals)) if len(c2_vals[i]) != value_len]
-        for iPop in range(len(c1_vals), 0, -1):
+
+        # Take out this line below when known length of samples is implemented (Hexadecimal)
+        false_vals      = [i for i in range(len(c1_vals)) if len(c1_vals[i]) == 0] + [i for i in range(len(c2_vals)) if len(c2_vals[i]) == 0]
+        false_vals.sort()
+        if len(false_vals) > 0:
+            false_vals  = list(set(false_vals)) # Crucial: Sort and get uniques
+        for iPop in range(len(c1_vals)-1, -1, -1):
             if iPop in false_vals:
+                print('Removed value')
                 c1_vals.pop(iPop)
                 c2_vals.pop(iPop)
 
@@ -212,7 +219,10 @@ class Sampling():
         relay_message["c1"] = ''
         relay_message["c2"] = ''
 
-        ser.read(ser.inWaiting()) # Eliminate message queue at port
+        for _ in range(1000):
+            ser.read(ser.inWaiting())
+            # Eliminate message queue at port, do this several times to get
+            # everything since buffer that we get with inWaiting is limited
             
         while not ser.closed:
             

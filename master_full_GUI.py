@@ -9,13 +9,14 @@ from PIL                                    import Image, ImageTk
 from functools                              import partial
 from sys                                    import platform
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('TkAgg') # WXAgg seems to give slight performance boost out of all options. Prior was "TkAgg")
 from matplotlib.backends.backend_tkagg      import FigureCanvasTkAgg
 from tkinter                                import ttk
 import matplotlib.pyplot                    as plt
 import numpy                                as np
 import tkinter                              as tk
 import parameters                           as p
+import subprocess
 
 
 class MainWindow(Processing):
@@ -141,6 +142,10 @@ class MainWindow(Processing):
         self.frameSignal.grid(row=2, column=1, columnspan=7)
         self.frameSignal = tk.LabelFrame(self.frameSignal, text='Data stream',
             padx=0, pady=0)
+        
+        # self.txtOutput  = tk.Text(self.master, bg='#dddddd')
+        # self.txtOutput.grid(row=3, column=1, columnspan=7)
+        # self.txtOutput.insert(tk.END, 'Loading ...')
 
         # Define inputs from GUI elements
         notch           = tk.IntVar()
@@ -229,7 +234,7 @@ class MainWindow(Processing):
 
         # Circumvent bug where radio buttons had wrong selections not 
         # corresponding to actual selections
-        bpass.set(-1)
+        bpass.set(0)
         notch.set(0)
         yran.set(1000)
         envelope.set(False)
@@ -488,7 +493,7 @@ class MainWindow(Processing):
         x_cordinate = int((self.screen_width/2) - (pixels_x/2))
         y_cordinate = int((self.screen_height/2) - (pixels_y/2))
 
-        root.geometry("{}x{}+{}+{}".format(pixels_x, pixels_y, x_cordinate, y_cordinate))
+        root.geometry("{}x{}+{}+{}".format(pixels_x, round(pixels_y*1.05), x_cordinate, y_cordinate))
 
         pb          = ttk.Progressbar(root, orient='horizontal', length=pixels_x, mode='determinate')
         pb.pack()

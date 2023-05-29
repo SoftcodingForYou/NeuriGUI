@@ -22,7 +22,7 @@ time_out        = None #Wait for message
 udp_ip          = "127.0.0.1" # Loopback ip for on-device communication
 
 #Plotting
-plot_intv       = 200 #scalar defining update rate of figure (ms)
+# plot_intv       = 200 #scalar defining update rate of figure (ms) OBSOLETE PARAMETER
 s_down          = 5 #Desired downsampling factor (buffer_length*sample_rate/s_down must be convertable to integer)
 
 

@@ -213,30 +213,39 @@ class GUIWidgets(Processing):
 
         self.x              = list(range(-self.numsamples, 0, self.s_down))
         self.x              = [x/self.samplerate for x in self.x]
-        self.y              = [0 for _ in range(0, self.numsamples, self.s_down)]
+        self.xplot          = np.array(self.x) # Non-sense action to avoid pointers (force creation of other id())
+        self.y              = []
         self.data_line      = {}
+        self.signalgraph    = {}
 
         for iChan in range(self.numchans):
 
-            signalgraph     = PlotWidget()
+            self.signalgraph[iChan] = PlotWidget()
+
+            self.y.append([0 for _ in range(0, self.numsamples, self.s_down)])
 
             # Aesthetics
-            signalgraph.setBackground('w')
-            signalgraph.setLabel('left', 'Amplitude (uV)')
-            signalgraph.setLabel('bottom', 'Time (s)')
-            signalgraph.showGrid(x=True, y=True)
-            pen1 = pg.mkPen(color=(49,130,189), width=1)
+            self.signalgraph[iChan].setBackground('w')
+            self.signalgraph[iChan].setLabel('left', 'Amplitude (uV)')
+            self.signalgraph[iChan].setLabel('bottom', 'Time (s)')
+            self.signalgraph[iChan].showGrid(x=True, y=True)
+            penstyle        = pg.mkPen(color=(49,130,189), width=2)
             
             # Decorate plot
-            signalgraph.addLegend()
-            signalgraph.setAntialiasing(False)
-            signalgraph.setYRange(p.yrange[0], p.yrange[1])
-            signalgraph.setRange(yRange=(p.yrange[0], p.yrange[1]), disableAutoRange=True)
+            self.signalgraph[iChan].addLegend()
+            self.signalgraph[iChan].setAntialiasing(False)  # Huge performance gain and 
+                                                # necessary to keep up with 
+                                                # the sampling rate
+            self.signalgraph[iChan].setYRange(p.yrange[0], p.yrange[1])
+            self.signalgraph[iChan].setRange(
+                yRange=(self.yrange[0], self.yrange[1]), 
+                padding=0, disableAutoRange=True)
             
             # Set signal lines
-            self.data_line[iChan] =  signalgraph.plot(self.x, self.y, name='Channel {}'.format(str(iChan+1)), pen=pen1)
+            self.data_line[iChan] = self.signalgraph[iChan].plot(
+                self.xplot, self.y[iChan], name='Chan. {}'.format(str(iChan+1)), pen=penstyle)
 
-            vertlayout.addWidget(signalgraph)
+            vertlayout.addWidget(self.signalgraph[iChan])
 
         signal.setLayout(vertlayout)
 
@@ -266,18 +275,16 @@ class GUIWidgets(Processing):
         self.x.append(self.x[-1]+self.count/self.samplerate) # t_now/1000
 
         if self.streaming == True:
-            xdata           = self.x
-            x0              = xdata[0]
-            xend            = xdata[-1]
-            xrange          = range(int(round(x0, 0)), int(round(xend, 0)), 1)
+            self.xplot      = self.x
         
 
         # Update plots for every channel
         # -------------------------------------------------------------
         for iChan in range(self.numchans):
             if self.streaming == True:
-                self.y = processed_buffer[iChan, self.idx_retain]
-                self.data_line[iChan].setData(self.x, self.y)  # Update the data
+                self.y[iChan] = processed_buffer[iChan, self.idx_retain]
+            
+            self.data_line[iChan].setData(self.x, self.y[iChan])  # Update the data
 
             # Set vertical range
             if self.yrange[1] == 0:
@@ -286,10 +293,10 @@ class GUIWidgets(Processing):
             else:
                 vscale = self.yrange
 
-            # if self.envelope == True:
-            #     self.ax[iChan].set_ylim([0, vscale[1]])
-            # else:
-            #     self.ax[iChan].set_ylim(vscale)
+            if self.envelope == True:
+                self.signalgraph[iChan].setYRange(0, vscale[1], padding=0)
+            else:
+                self.signalgraph[iChan].setYRange(vscale[0], vscale[1], padding=0)
 
         self.count          = 0
 

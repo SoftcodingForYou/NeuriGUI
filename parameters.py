@@ -33,4 +33,4 @@ frequency_bands = {
     'LineNoise60':  (56, 64),
     'Sleep':        (1, 30),
     'Theta':        (4, 8),
-    'Whole':        (1, 40)}
+    'Whole':        (0.5, 45)}

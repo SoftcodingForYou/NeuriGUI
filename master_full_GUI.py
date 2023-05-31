@@ -16,12 +16,18 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
 
         QtWidgets.QMainWindow.__init__(self)
 
+        guiwidgets          = GUIWidgets()
+
+        splash_pix = QtGui.QPixmap(guiwidgets.img_helment)
+        splash_pix = splash_pix.scaled(500, 500, QtCore.Qt.KeepAspectRatio)
+        splash = QtWidgets.QSplashScreen(splash_pix, QtCore.Qt.WindowStaysOnTopHint)
+        splash.show()
+
         # Load methods and build communication with EEG board
         # -----------------------------------------------------------------
         ParamVal()                              # Sanity checks
         confboard           = ConfigureBoard()  # Board communication
         sampl               = Sampling()        # Signal handling
-        guiwidgets          = GUIWidgets()
 
         # Build GUI
         # -----------------------------------------------------------------
@@ -76,6 +82,8 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         self.timer.timeout.connect(lambda: guiwidgets.update_signal_plot(self.recv_conn))
         self.timer.singleShot = False
         self.timer.start()
+
+        splash.close()
 
 
     def on_closing(self):

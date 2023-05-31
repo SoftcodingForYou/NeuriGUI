@@ -23,6 +23,9 @@ class GUIWidgets(Processing):
         self.s_down         = p.s_down
         self.idx_retain     = range(0, int(p.sample_rate * p.buffer_length), p.s_down)
         self.yrange         = p.yrange
+        self.notch          = p.notch
+        self.bpass          = p.bpass
+        self.denv           = p.dispenv
         self.img_helment    = './frontend/Isotipo-Helment-color.png'
 
         # Defaults
@@ -48,6 +51,24 @@ class GUIWidgets(Processing):
         rbtn3               = QtWidgets.QRadioButton('200')
         rbtn4               = QtWidgets.QRadioButton('500')
         rbtn5               = QtWidgets.QRadioButton('1000')
+        
+        if self.yrange[1] == 0:
+            rbtn1.setChecked(True)
+        elif self.yrange[1] == 100:
+            rbtn2.setChecked(True)
+        elif self.yrange[1] == 200:
+            rbtn3.setChecked(True)
+        elif self.yrange[1] == 500:
+            rbtn4.setChecked(True)
+        elif self.yrange[1] == 1000:
+            rbtn5.setChecked(True)
+
+        rbtn1.clicked.connect(lambda: self.yrange_selection(0))
+        rbtn2.clicked.connect(lambda: self.yrange_selection(100))
+        rbtn3.clicked.connect(lambda: self.yrange_selection(200))
+        rbtn4.clicked.connect(lambda: self.yrange_selection(500))
+        rbtn5.clicked.connect(lambda: self.yrange_selection(1000))
+
         vertlayout.addWidget(title)
         vertlayout.addLayout(horilayout)
         horilayout.addWidget(rbtn1)
@@ -72,6 +93,18 @@ class GUIWidgets(Processing):
         rbtn1               = QtWidgets.QRadioButton('50')
         rbtn2               = QtWidgets.QRadioButton('60')
         rbtn3               = QtWidgets.QRadioButton('Off')
+
+        if self.notch == 50:
+            rbtn1.setChecked(True)
+        elif self.notch == 60:
+            rbtn2.setChecked(True)
+        elif self.notch == 0:
+            rbtn3.setChecked(True)
+
+        rbtn1.clicked.connect(lambda: self.filt_noise(50))
+        rbtn2.clicked.connect(lambda: self.filt_noise(60))
+        rbtn3.clicked.connect(lambda: self.filt_noise(0))
+
         vertlayout.addWidget(title)
         vertlayout.addLayout(horilayout)
         horilayout.addWidget(rbtn1)
@@ -96,6 +129,24 @@ class GUIWidgets(Processing):
         rbtn3               = QtWidgets.QRadioButton('0.5 - 45')
         rbtn4               = QtWidgets.QRadioButton('1 - 30')
         rbtn5               = QtWidgets.QRadioButton('4 - 8')
+
+        if self.bpass == -1:
+            rbtn1.setChecked(True)
+        elif self.bpass == 0:
+            rbtn2.setChecked(True)
+        elif self.bpass == 1:
+            rbtn3.setChecked(True)
+        elif self.bpass == 2:
+            rbtn4.setChecked(True)
+        elif self.bpass == 3:
+            rbtn5.setChecked(True)
+
+        rbtn1.clicked.connect(lambda: self.filt_bandpass(-1))
+        rbtn2.clicked.connect(lambda: self.filt_bandpass(0))
+        rbtn3.clicked.connect(lambda: self.filt_bandpass(1))
+        rbtn4.clicked.connect(lambda: self.filt_bandpass(2))
+        rbtn5.clicked.connect(lambda: self.filt_bandpass(3))
+
         vertlayout.addWidget(title)
         vertlayout.addLayout(horilayout)
         horilayout.addWidget(rbtn1)
@@ -119,6 +170,15 @@ class GUIWidgets(Processing):
         title               = QtWidgets.QLabel('Display envelope')
         rbtn1               = QtWidgets.QRadioButton('Off')
         rbtn2               = QtWidgets.QRadioButton('On')
+
+        if self.denv == False:
+            rbtn1.setChecked(True)
+        elif self.denv == True:
+            rbtn2.setChecked(True)
+
+        rbtn1.clicked.connect(lambda: self.disp_envelope(False))
+        rbtn2.clicked.connect(lambda: self.disp_envelope(True))
+
         vertlayout.addWidget(title)
         vertlayout.addLayout(horilayout)
         horilayout.addWidget(rbtn1)
@@ -136,9 +196,12 @@ class GUIWidgets(Processing):
         stream              = QtWidgets.QWidget()
         vertlayout          = QtWidgets.QVBoxLayout()
         title               = QtWidgets.QLabel('Data stream')
-        streambtn           = QtWidgets.QPushButton(text="Stop")
+        self.streambtn      = QtWidgets.QPushButton(text="Started")
+
+        self.streambtn.clicked.connect(self.streamstate)
+
         vertlayout.addWidget(title)
-        vertlayout.addWidget(streambtn)
+        vertlayout.addWidget(self.streambtn)
         stream.setLayout(vertlayout)
         
         return stream
@@ -161,6 +224,7 @@ class GUIWidgets(Processing):
             signalgraph.setBackground('w')
             signalgraph.setLabel('left', 'Amplitude (uV)')
             signalgraph.setLabel('bottom', 'Time (s)')
+            signalgraph.showGrid(x=True, y=True)
             pen1 = pg.mkPen(color=(49,130,189), width=1)
             
             # Decorate plot
@@ -230,8 +294,7 @@ class GUIWidgets(Processing):
         self.count          = 0
 
     
-    def filt_noise(self, button):
-        choice = button.get()
+    def filt_noise(self, choice):
         choice = int(choice)
         if choice == 50:
             print('Enabled 50 Hz stopband filter')
@@ -247,8 +310,7 @@ class GUIWidgets(Processing):
             self.aSB    = np.array([None, None])
 
 
-    def filt_bandpass(self, button):
-        choice = button.get()
+    def filt_bandpass(self, choice):
         choice = int(choice)
         if choice == -1:
             print('Displaying raw signal')
@@ -272,28 +334,26 @@ class GUIWidgets(Processing):
             self.aPB        = self.a_theta
 
 
-    def yrange_selection(self, button):
-        choice = button.get()
-        choice = int(choice)
+    def yrange_selection(self, choice):
+        choice              = int(choice)
         if choice == 100:
             print('Vertical range set to -100 uV to +100 uV')
-            self.yrange = (-100, 100)
+            self.yrange     = (-100, 100)
         elif choice == 200:
             print('Vertical range set to -200 uV to +200 uV')
-            self.yrange = (-200, 200)
+            self.yrange     = (-200, 200)
         elif choice == 500:
             print('Vertical range set to -500 uV to +500 uV')
-            self.yrange = (-500, 500)
+            self.yrange     = (-500, 500)
         elif choice == 1000:
             print('Vertical range set to -1000 uV to +1000 uV')
-            self.yrange = (-1000, 1000)
+            self.yrange     = (-1000, 1000)
         elif choice == 0:
             print('Vertical range set relative to signal')
-            self.yrange = (-0, 0)
+            self.yrange     = (-0, 0)
 
 
-    def disp_envelope(self, button):
-        choice = button.get()
+    def disp_envelope(self, choice):
         if choice == True:
             print('Enabled envelope displaying')
             self.envelope = True
@@ -303,9 +363,9 @@ class GUIWidgets(Processing):
 
 
     def streamstate(self):
-        if self.stream.get() == 'Start':
-            self.stream.set('Stop')
+        if not self.streaming:
+            self.streambtn.setText('Started')
             self.streaming = True
-        elif self.stream.get() == 'Stop':
-            self.stream.set('Start')
+        elif self.streaming:
+            self.streambtn.setText('Stopped')
             self.streaming = False

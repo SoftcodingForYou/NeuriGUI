@@ -3,6 +3,9 @@
 
 #Session-specific parameters
 yrange          = [-1000, 1000] # List of scalars ([negative, positive]) in order to set figure y axis range
+notch           = 0 # Integer 0 (Off), 50 (50 Hz) or 60 (60 Hz)
+bpass           = 0 # Integer -1 to 3 according to number of options in "frequency_bands" below
+dispenv         = False # Boolean 0 (Off), 1 (On)
 
 #Signal arrays
 sample_rate     = 200 #Hertz

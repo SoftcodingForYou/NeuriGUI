@@ -304,8 +304,8 @@ class Sampling():
         time_diff           = curr_time - prev_iter_time
         # It took (time_diff) ms to fetch (sample_rate) samples.
         # Calculate actual sampling rate
-        actual_sr           = (self.sample_rate / (time_diff / 1000))
-        print('%d ms: Writing data (sampling rate = %f Hz)' %
+        actual_sr           = round((self.sample_rate / (time_diff / 1000)), 1)
+        print('%d ms: Writing data (sampling rate = %.1f Hz)' %
             (self.time_stamps[-1], actual_sr))
 
 

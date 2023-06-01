@@ -1,5 +1,4 @@
 #Prepare userland =========================================================
-import parameters                           as p
 from backend.Helment_signal_processing      import Processing
 from backend.Helment_configure_board        import ConfigureBoard
 from backend.Helment_signal_sampling        import Sampling
@@ -16,7 +15,7 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
 
         QtWidgets.QMainWindow.__init__(self)
 
-        guiwidgets          = GUIWidgets()
+        guiwidgets          = GUIWidgets(self)
 
         splash_pix = QtGui.QPixmap(guiwidgets.img_helment)
         splash_pix = splash_pix.scaled(500, 500, QtCore.Qt.KeepAspectRatio)
@@ -48,7 +47,11 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         widget_bandpass     = guiwidgets.fg_bandpass_filter()
         widget_envelope     = guiwidgets.fg_envelope()
         widget_sbtn         = guiwidgets.fg_stream_button()
+        widget_darkmode     = guiwidgets.fg_theme_button()
         widget_signal       = guiwidgets.fg_signal_stream() # widget_signal also contains channel signals
+
+        guiwidgets.initiate_theme() # Needs to be called after widget 
+                                    # elements initiation since hard-coded
 
         vertlayout.addLayout(controlpanel)
         controlpanel.addWidget(widget_vrange)
@@ -56,6 +59,7 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         controlpanel.addWidget(widget_bandpass)
         controlpanel.addWidget(widget_envelope)
         controlpanel.addWidget(widget_sbtn)
+        controlpanel.addWidget(widget_darkmode)
         vertlayout.addWidget(widget_signal)
 
         # Generate variable exchange pipe

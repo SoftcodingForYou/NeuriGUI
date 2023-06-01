@@ -1,15 +1,16 @@
 #Prepare userland =========================================================
 import parameters                           as p
 from backend.Helment_signal_processing      import Processing
-from PyQt5                                  import QtCore, QtWidgets
+from PyQt5                                  import QtCore, QtWidgets, QtGui
 from pyqtgraph                              import PlotWidget
-from functools                              import partial
 import pyqtgraph                            as pg
 import numpy                                as np
+import os.path
+
 
 class GUIWidgets(Processing):
 
-    def __init__(self):
+    def __init__(self, mainwindow):
 
         super(GUIWidgets, self).__init__() # Init Processing class first
 
@@ -35,14 +36,34 @@ class GUIWidgets(Processing):
         self.aSB            = self.a_notch
         self.bPB            = self.b_wholerange
         self.aPB            = self.a_wholerange
+        self.lighttheme     = QtGui.QGuiApplication.palette()
+        self.darktheme      = self.define_darktheme()
+        self.mainwindow     = mainwindow
 
+        if os.path.exists('./frontend/darkmode.txt'):
+            with open('./frontend/darkmode.txt') as f:
+                themeline   = f.read()
+                if themeline == 'Darkmode=1':
+                    self.darkmode = True
+                else:
+                    self.darkmode = False
+        else:
+            self.darkmode = False
+
+
+    def initiate_theme(self):
+        if self.darkmode:
+            self.apply_dark_theme()
+        elif not self.darkmode:
+            self.apply_light_theme()
+        
 
     def fg_vert_range(self):
         # -----------------------------------------------------------------
         # Vert. range (uV)
         # rbt1 (Auto) rdbt2 (100) rdbt3 (200) rdbt4 (500) rdbt5 (1000)
         # -----------------------------------------------------------------
-        vert_range          = QtWidgets.QWidget()
+        self.vert_range     = QtWidgets.QWidget()
         vertlayout          = QtWidgets.QVBoxLayout()
         horilayout          = QtWidgets.QHBoxLayout()
         title               = QtWidgets.QLabel('Vert. range (uV)')
@@ -76,9 +97,9 @@ class GUIWidgets(Processing):
         horilayout.addWidget(rbtn3)
         horilayout.addWidget(rbtn4)
         horilayout.addWidget(rbtn5)
-        vert_range.setLayout(vertlayout)
+        self.vert_range.setLayout(vertlayout)
 
-        return vert_range
+        return self.vert_range
     
 
     def fg_notch_filter(self):
@@ -86,7 +107,7 @@ class GUIWidgets(Processing):
         # Notch filter
         # rbt1 (50 Hz) rdbt2 (60 Hz) rdbt3 (Off)
         # -----------------------------------------------------------------
-        notch_filter        = QtWidgets.QWidget()
+        self.notch_filter   = QtWidgets.QWidget()
         vertlayout          = QtWidgets.QVBoxLayout()
         horilayout          = QtWidgets.QHBoxLayout()
         title               = QtWidgets.QLabel('Notch filter (Hz)')
@@ -110,9 +131,9 @@ class GUIWidgets(Processing):
         horilayout.addWidget(rbtn1)
         horilayout.addWidget(rbtn2)
         horilayout.addWidget(rbtn3)
-        notch_filter.setLayout(vertlayout)
+        self.notch_filter.setLayout(vertlayout)
 
-        return notch_filter
+        return self.notch_filter
     
 
     def fg_bandpass_filter(self):
@@ -120,7 +141,7 @@ class GUIWidgets(Processing):
         # Bandpass (Hz)
         # rbt1 (0.5 - 45) rdbt2 (1 - 30) rdbt3 (4 - 8)
         # -----------------------------------------------------------------
-        bandpass_filter     = QtWidgets.QWidget()
+        self.bandpass_filter= QtWidgets.QWidget()
         vertlayout          = QtWidgets.QVBoxLayout()
         horilayout          = QtWidgets.QHBoxLayout()
         title               = QtWidgets.QLabel('Bandpass (Hz)')
@@ -154,9 +175,9 @@ class GUIWidgets(Processing):
         horilayout.addWidget(rbtn3)
         horilayout.addWidget(rbtn4)
         horilayout.addWidget(rbtn5)
-        bandpass_filter.setLayout(vertlayout)
+        self.bandpass_filter.setLayout(vertlayout)
 
-        return bandpass_filter
+        return self.bandpass_filter
     
 
     def fg_envelope(self):
@@ -164,7 +185,7 @@ class GUIWidgets(Processing):
         # Display envelope
         # rbt1 (Off) rdbt2 (On)
         # -----------------------------------------------------------------
-        envelope            = QtWidgets.QWidget()
+        self.envel          = QtWidgets.QWidget()
         vertlayout          = QtWidgets.QVBoxLayout()
         horilayout          = QtWidgets.QHBoxLayout()
         title               = QtWidgets.QLabel('Display envelope')
@@ -183,9 +204,9 @@ class GUIWidgets(Processing):
         vertlayout.addLayout(horilayout)
         horilayout.addWidget(rbtn1)
         horilayout.addWidget(rbtn2)
-        envelope.setLayout(vertlayout)
+        self.envel.setLayout(vertlayout)
 
-        return envelope
+        return self.envel
     
 
     def fg_stream_button(self):
@@ -193,7 +214,7 @@ class GUIWidgets(Processing):
         # Data stream
         # Dynamic button (Start/Stop (default))
         # -----------------------------------------------------------------
-        stream              = QtWidgets.QWidget()
+        self.stream         = QtWidgets.QWidget()
         vertlayout          = QtWidgets.QVBoxLayout()
         title               = QtWidgets.QLabel('Data stream')
         self.streambtn      = QtWidgets.QPushButton(text="Started")
@@ -202,13 +223,32 @@ class GUIWidgets(Processing):
 
         vertlayout.addWidget(title)
         vertlayout.addWidget(self.streambtn)
-        stream.setLayout(vertlayout)
+        self.stream.setLayout(vertlayout)
         
-        return stream
+        return self.stream
+    
+
+    def fg_theme_button(self):
+        self.theme          = QtWidgets.QWidget()
+        vertlayout          = QtWidgets.QVBoxLayout()
+        title               = QtWidgets.QLabel('Current theme')
+
+        if self.darkmode:
+            self.themebtn   = QtWidgets.QPushButton(text="Dark")
+        elif not self.darkmode:
+            self.themebtn   = QtWidgets.QPushButton(text="Light")
+
+        self.themebtn.clicked.connect(self.themestate)
+
+        vertlayout.addWidget(title)
+        vertlayout.addWidget(self.themebtn)
+        self.theme.setLayout(vertlayout)
+        
+        return self.theme
     
 
     def fg_signal_stream(self):
-        signal              = QtWidgets.QWidget()
+        self.signal         = QtWidgets.QWidget()
         vertlayout          = QtWidgets.QVBoxLayout()
 
         self.x              = list(range(-self.numsamples, 0, self.s_down))
@@ -217,6 +257,7 @@ class GUIWidgets(Processing):
         self.y              = []
         self.data_line      = {}
         self.signalgraph    = {}
+        self.penstyle       = {}
 
         for iChan in range(self.numchans):
 
@@ -229,7 +270,7 @@ class GUIWidgets(Processing):
             self.signalgraph[iChan].setLabel('left', 'Amplitude (uV)')
             self.signalgraph[iChan].setLabel('bottom', 'Time (s)')
             self.signalgraph[iChan].showGrid(x=True, y=True)
-            penstyle        = pg.mkPen(color=(49,130,189), width=2)
+            self.penstyle[iChan] = pg.mkPen(color=(49,130,189), width=2)
             
             # Decorate plot
             self.signalgraph[iChan].addLegend()
@@ -243,13 +284,13 @@ class GUIWidgets(Processing):
             
             # Set signal lines
             self.data_line[iChan] = self.signalgraph[iChan].plot(
-                self.xplot, self.y[iChan], name='Chan. {}'.format(str(iChan+1)), pen=penstyle)
+                self.xplot, self.y[iChan], name='Chan. {}'.format(str(iChan+1)), pen=self.penstyle[iChan])
 
             vertlayout.addWidget(self.signalgraph[iChan])
 
-        signal.setLayout(vertlayout)
+        self.signal.setLayout(vertlayout)
 
-        return signal
+        return self.signal
 
 
     def update_signal_plot(self, recv_conn):
@@ -376,3 +417,82 @@ class GUIWidgets(Processing):
         elif self.streaming:
             self.streambtn.setText('Stopped')
             self.streaming = False
+
+
+    def themestate(self):
+
+        if self.darkmode:
+            self.themebtn.setText('Light')
+            self.apply_light_theme()
+            with open('./frontend/darkmode.txt', 'w') as file:
+                file.write('Darkmode=0')
+            self.darkmode = False
+            print('Enabled light theme')
+        elif not self.darkmode:
+            self.themebtn.setText('Dark')
+            self.apply_dark_theme()
+            with open('./frontend/darkmode.txt', 'w') as file:
+                file.write('Darkmode=1')
+            self.darkmode = True
+            print('Enabled dark theme')
+
+
+    def define_darktheme(self):
+        darktheme = QtGui.QPalette()
+        darktheme.setColor(QtGui.QPalette.Window, QtGui.QColor(53, 53, 53))
+        darktheme.setColor(QtGui.QPalette.WindowText, QtCore.Qt.white)
+        darktheme.setColor(QtGui.QPalette.Base, QtGui.QColor(25, 25, 25))
+        darktheme.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(53, 53, 53))
+        darktheme.setColor(QtGui.QPalette.ToolTipBase, QtCore.Qt.black)
+        darktheme.setColor(QtGui.QPalette.ToolTipText, QtCore.Qt.white)
+        darktheme.setColor(QtGui.QPalette.Text, QtCore.Qt.white)
+        darktheme.setColor(QtGui.QPalette.Button, QtGui.QColor(53, 53, 53))
+        darktheme.setColor(QtGui.QPalette.ButtonText, QtCore.Qt.white)
+        darktheme.setColor(QtGui.QPalette.BrightText, QtCore.Qt.red)
+        darktheme.setColor(QtGui.QPalette.Link, QtGui.QColor(42, 130, 218))
+        darktheme.setColor(QtGui.QPalette.Highlight, QtGui.QColor(42, 130, 218))
+        darktheme.setColor(QtGui.QPalette.HighlightedText, QtCore.Qt.black)
+
+        return darktheme
+
+
+    def apply_light_theme(self):
+        self.signal.setPalette(self.lighttheme)
+        self.theme.setPalette(self.lighttheme)
+        self.stream.setPalette(self.lighttheme)
+        self.bandpass_filter.setPalette(self.lighttheme)
+        self.notch_filter.setPalette(self.lighttheme)
+        self.envel.setPalette(self.lighttheme)
+        self.vert_range.setPalette(self.lighttheme)
+        self.streambtn.setPalette(self.lighttheme)
+        self.themebtn.setPalette(self.lighttheme)
+        self.streambtn.setStyleSheet(
+            'QPushButton {background-color: rgb(222,235,247); border-radius: 10px;padding: 6px;color: #08519c;}')
+        self.themebtn.setStyleSheet(
+            'QPushButton {background-color: rgb(222,235,247); border-radius: 10px;padding: 6px;color: #08519c;}')
+        self.mainwindow.setPalette(self.lighttheme)
+
+        for iChan in range(self.numchans):
+            self.signalgraph[iChan].setBackground((247,247,247))
+            self.penstyle[iChan] = pg.mkPen(color=(49,130,189), width=2)
+
+
+    def apply_dark_theme(self):        
+        self.signal.setPalette(self.darktheme)
+        self.theme.setPalette(self.darktheme)
+        self.stream.setPalette(self.darktheme)
+        self.bandpass_filter.setPalette(self.darktheme)
+        self.notch_filter.setPalette(self.darktheme)
+        self.envel.setPalette(self.darktheme)
+        self.vert_range.setPalette(self.darktheme)
+        self.streambtn.setPalette(self.darktheme)
+        self.themebtn.setPalette(self.darktheme)
+        self.streambtn.setStyleSheet(
+            'QPushButton {background-color: rgb(49,130,189); border-radius: 10px;padding: 6px; color: #eff3ff;}')
+        self.themebtn.setStyleSheet(
+            'QPushButton {background-color: rgb(49,130,189); border-radius: 10px;padding: 6px; color: #eff3ff;}')
+        self.mainwindow.setPalette(self.darktheme)
+
+        for iChan in range(self.numchans):
+            self.signalgraph[iChan].setBackground((37,37,37))
+            self.penstyle[iChan] = pg.mkPen(color=(222,235,247), width=2)

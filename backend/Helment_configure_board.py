@@ -2,8 +2,6 @@ import serial #Crucial: Install using pip3 install "pyserial", NOT "serial"
 import serial.tools.list_ports
 import parameters                   as p
 import time
-from encodings                      import utf_8
-
 
 class ConfigureBoard:
 

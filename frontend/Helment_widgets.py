@@ -27,7 +27,6 @@ class GUIWidgets(Processing):
         self.notch          = p.notch
         self.bpass          = p.bpass
         self.denv           = p.dispenv
-        self.img_helment    = './frontend/Isotipo-Helment-color.png'
 
         # Defaults
         self.streaming      = True

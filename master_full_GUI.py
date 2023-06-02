@@ -4,6 +4,7 @@ from backend.Helment_configure_board        import ConfigureBoard
 from backend.Helment_signal_sampling        import Sampling
 from backend.Helment_parameter_validation   import ParamVal
 from frontend.Helment_widgets               import GUIWidgets
+from frontend.Helment_user_experience       import Aux
 from multiprocessing                        import Process, Pipe
 from PyQt5                                  import QtCore, QtGui, QtWidgets
 import sys  # We need sys so that we can pass argv to QApplication
@@ -15,25 +16,30 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
 
         QtWidgets.QMainWindow.__init__(self)
 
-        guiwidgets          = GUIWidgets(self)
+        # Splash screen
+        # -----------------------------------------------------------------
+        auxgui              = Aux()
+        splash, pb = auxgui.disp_splash()
+        auxgui.report_progress(splash, pb, 5)
 
-        splash_pix = QtGui.QPixmap(guiwidgets.img_helment)
-        splash_pix = splash_pix.scaled(500, 500, QtCore.Qt.KeepAspectRatio)
-        splash = QtWidgets.QSplashScreen(splash_pix, QtCore.Qt.WindowStaysOnTopHint)
-        splash.show()
+        guiwidgets          = GUIWidgets(self)
+        auxgui.report_progress(splash, pb, 5)
 
         # Load methods and build communication with EEG board
         # -----------------------------------------------------------------
         ParamVal()                              # Sanity checks
+        auxgui.report_progress(splash, pb, 5)
         confboard           = ConfigureBoard()  # Board communication
+        auxgui.report_progress(splash, pb, 20)
         sampl               = Sampling()        # Signal handling
+        auxgui.report_progress(splash, pb, 5)
 
         # Build GUI
         # -----------------------------------------------------------------
         super(MainWindow, self).__init__(*args, **kwargs)
 
         self.setWindowTitle('Helment EEG GUI (raw data available at {}:{})'.format(sampl.udp_ip, sampl.udp_port))
-        self.setWindowIcon(QtGui.QIcon(guiwidgets.img_helment))
+        self.setWindowIcon(QtGui.QIcon(auxgui.img_helment))
         self.central_widget = QtWidgets.QWidget() # A QWidget to work as Central Widget
 
         # Without specifying, this just makes the GUI separable vertically
@@ -52,6 +58,7 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
 
         guiwidgets.initiate_theme() # Needs to be called after widget 
                                     # elements initiation since hard-coded
+        auxgui.report_progress(splash, pb, 15)
 
         vertlayout.addLayout(controlpanel)
         controlpanel.addWidget(widget_vrange)
@@ -61,6 +68,7 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         controlpanel.addWidget(widget_sbtn)
         controlpanel.addWidget(widget_darkmode)
         vertlayout.addWidget(widget_signal)
+        auxgui.report_progress(splash, pb, 5)
 
         # Generate variable exchange pipe
         # -----------------------------------------------------------------
@@ -75,11 +83,13 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         
         if confboard.des_state == 2 or confboard.des_state == 3:
             self.sampling.start()
+        auxgui.report_progress(splash, pb, 10)
 
         
         ## Finalize
         self.setCentralWidget(self.central_widget)
         self.central_widget.setLayout(vertlayout) # Draw elements in main widget
+        auxgui.report_progress(splash, pb, 10)
 
         self.timer          = QtCore.QTimer()
         self.timer.setInterval(0)
@@ -87,7 +97,9 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         self.timer.singleShot = False
         self.timer.start()
 
-        splash.close()
+        auxgui.report_progress(splash, pb, 10)
+        splash.after(1000, lambda: self.report_progress(splash, pb, 9))   
+        splash.destroy()
 
 
     def on_closing(self):

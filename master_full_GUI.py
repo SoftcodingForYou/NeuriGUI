@@ -19,7 +19,7 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         # Splash screen
         # -----------------------------------------------------------------
         auxgui              = Aux()
-        splash, pb = auxgui.disp_splash()
+        splash, pb          = auxgui.disp_splash()
         auxgui.report_progress(splash, pb, 5)
 
         guiwidgets          = GUIWidgets(self)
@@ -84,7 +84,6 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         if confboard.des_state == 2 or confboard.des_state == 3:
             self.sampling.start()
         auxgui.report_progress(splash, pb, 10)
-
         
         ## Finalize
         self.setCentralWidget(self.central_widget)
@@ -95,20 +94,18 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         self.timer.setInterval(0)
         self.timer.timeout.connect(lambda: guiwidgets.update_signal_plot(self.recv_conn))
         self.timer.singleShot = False
-        self.timer.start()
-
-        auxgui.report_progress(splash, pb, 10)
-        splash.after(1000, lambda: self.report_progress(splash, pb, 9))   
+        
+        # Splash screen needs to be closed before timer start
+        auxgui.report_progress(splash, pb, 19)
         splash.destroy()
-
+        self.timer.start()
+        
 
     def on_closing(self):
         self.timer.stop()
         self.sampling.terminate()
         self.recv_conn.close()
         self.send_conn.close()
-        
-
 
 
 if __name__ == '__main__': # Necessary line for "multiprocessing" to work

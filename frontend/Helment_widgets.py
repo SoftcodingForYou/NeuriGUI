@@ -272,7 +272,7 @@ class GUIWidgets(Processing):
             self.penstyle[iChan] = pg.mkPen(color=(49,130,189), width=2)
             
             # Decorate plot
-            self.signalgraph[iChan].addLegend()
+            legend = self.signalgraph[iChan].addLegend()
             self.signalgraph[iChan].setAntialiasing(False)  # Huge performance gain and 
                                                 # necessary to keep up with 
                                                 # the sampling rate
@@ -284,6 +284,13 @@ class GUIWidgets(Processing):
             # Set signal lines
             self.data_line[iChan] = self.signalgraph[iChan].plot(
                 self.xplot, self.y[iChan], name='Chan. {}'.format(str(iChan+1)), pen=self.penstyle[iChan])
+
+            # Disable interactivity
+            self.signalgraph[iChan].setMouseEnabled(x=False, y=False)
+            self.signalgraph[iChan].hideButtons()
+            self.signalgraph[iChan].getPlotItem().setMenuEnabled(False)
+            legend.mouseDragEvent = lambda *args, **kwargs: None
+            legend.hoverEvent = lambda *args, **kwargs: None
 
             vertlayout.addWidget(self.signalgraph[iChan])
 

@@ -23,3 +23,4 @@ backend/__pycache__/Helment_signal_processing.cpython-311.pyc
 backend/__pycache__/Helment_signal_sampling.cpython-311.pyc
 __pycache__/master_full_GUI.cpython-39.pyc
 frontend/__pycache__/Helment_widgets.cpython-39.pyc
+frontend/__pycache__/Helment_user_experience.cpython-39.pyc

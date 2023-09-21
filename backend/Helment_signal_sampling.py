@@ -1,7 +1,7 @@
 import json
 import time
 import socket
-import parameters                       as p
+#import random
 import numpy                            as np
 from threading                          import Thread
 from datetime                           import datetime
@@ -9,7 +9,7 @@ from datetime                           import datetime
 
 class Sampling():
 
-    def __init__(self):
+    def __init__(self, parameter):
 
         #Output
         t0              = str(datetime.now())
@@ -17,26 +17,26 @@ class Sampling():
         file_name       = 'Helment ' + t0 + '.txt'
 
         self.py_start   = round(time.perf_counter() * 1000, 0)
-        self.pga        = p.PGA
+        self.pga        = parameter.PGA
 
         # Prepare data output
         self.output_file= file_name
-        self.buffer     = np.zeros((p.buffer_channels, 
-            (p.buffer_length + p.buffer_add) * p.sample_rate))
-        self.time_stamps= np.zeros(p.buffer_length * p.sample_rate)
+        self.buffer     = np.zeros((parameter.max_chans, 
+            (parameter.buffer_length + parameter.buffer_add) * parameter.sample_rate))
+        self.time_stamps= np.zeros(parameter.buffer_length * parameter.sample_rate)
 
         with open(self.output_file, 'w', encoding= "utf_8") as file:
             file.write("Session Started\n")
             file.close() # Important for data to get written
 
         # Sample fetching parameters
-        self.sample_count       = p.sample_count # From parameters
-        self.saving_interval    = p.saving_interval * p.sample_rate # From parameters
+        self.sample_count       = parameter.sample_count # From parameters
+        self.saving_interval    = parameter.saving_interval * parameter.sample_rate # From parameters
         self.time_reset         = self.py_start
-        self.sample_rate        = p.sample_rate
+        self.sample_rate        = parameter.sample_rate
 
         # Build relay connection for other programs
-        self.build_relay(p.udp_ip)
+        self.build_relay(parameter.udp_ip)
 
 
     def build_relay(self, ip):
@@ -87,6 +87,8 @@ class Sampling():
         
         voltage = (4.5*sign_bit)/(self.pga*8388607.0)
         voltage = voltage * 1000000 # Convert to microvolts
+
+        #voltage = random.randrange(-200, 200)
         return voltage
     
 
@@ -182,11 +184,9 @@ class Sampling():
     def fetch_sample(self, pipe_conn, ser, cons, desired_con):
 
         if desired_con == 2: # USB
-            ser.port        = cons["USB"]
             s_per_buffer    = 1
             print('Ordered board to send data via USB. Switching mode ...')
         elif desired_con == 3: # Bluetooth
-            ser.port        = cons["BT"]
             s_per_buffer    = 10
             print('Ordered board to send data via Bluetooth. Switching mode ...')
 

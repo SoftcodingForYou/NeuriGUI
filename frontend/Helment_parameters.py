@@ -1,8 +1,7 @@
 import tkinter                              as tk
-from tkinter                                import messagebox, ttk
-from functools                              import partial
-from PIL                                    import Image, ImageTk
 import serial.tools.list_ports
+import customtkinter
+import os
 
 class Parameters:
 
@@ -16,10 +15,22 @@ class Parameters:
         self.get_screen_info()
         self.build_frontend()
 
-        self.master.mainloop()
+        # This stops code execution until paramWin closed
+        self.paramWin.mainloop()
 
 
     def set_defaults(self):
+        
+        #GUI settings
+        if os.path.exists('./frontend/darkmode.txt'):
+            with open('./frontend/darkmode.txt') as f:
+                themeline   = f.read()
+                if themeline == 'Darkmode=1':
+                    self.darkmode = True
+                else:
+                    self.darkmode = False
+        else:
+            self.darkmode = False
 
         #Session-specific parameters
         self.yrange         = [-1000, 1000] # List of scalars ([negative, positive]) in order to set figure y axis range
@@ -29,7 +40,8 @@ class Parameters:
 
         #Signal arrays
         self.sample_rate    = 200 #Hertz
-        self.buffer_channels= 2 #scalar
+        self.max_chans      = 2 #scalar (Max. amount of input channels of board)
+        self.selected_chans = [True] * self.max_chans
         self.buffer_length  = 20 #scalar (seconds)
         self.buffer_add     = 4 #scalar (seconds), we add this to the buffer for filtering to avoid edge artifacts
         self.sample_count   = 0 #integer zero
@@ -39,6 +51,10 @@ class Parameters:
         #Signal reception
         self.baud_rate      = 115200 #scalar default baudrate for connection
         self.port           = '' #Leave blank
+        self.protocols      = {}
+        self.protocols["USB"]= 2
+        self.protocols["BT"]= 3
+        self.firmfeedback   = self.protocols["USB"]
         self.time_out       = None #Wait for message
 
         # Signal relay
@@ -60,31 +76,45 @@ class Parameters:
 
 
     def build_frontend(self):
+        
         # Build GUI
         # -----------------------------------------------------------------
-        self.master = tk.Tk()
-        self.master.title('Settings (close when ready)')
-        pixels_x, pixels_y          = int(round(0.71*self.screen_width)), int(round(0.8*self.screen_height))
-        x_cordinate, y_cordinate    = int((self.screen_width/2) - (pixels_x/2)), int(0)
-        # self.master.geometry("{}x{}+{}+{}".format(pixels_x, pixels_y, x_cordinate, y_cordinate))
-        # self.master.iconphoto(False, ImageTk.PhotoImage(file=self.img_helment))
-        self.master.lift()
-        self.master.attributes("-topmost", True)
-        self.master.after_idle(self.master.attributes, '-topmost', False)
+        self.paramWin                = customtkinter.CTk()
+        pixels_x, pixels_y      = int(
+            round(0.4*self.screen_width)), int(round(0.8*self.screen_height))
+        x_cordinate, y_cordinate= int((self.screen_width/2) - (pixels_x/2)), int(0)
+        self.paramWin.geometry("{}x{}+{}+{}".format(
+            pixels_x, pixels_y, x_cordinate, y_cordinate))
+
+        if self.darkmode:
+            customtkinter.set_appearance_mode("dark")
+        else:
+            customtkinter.set_appearance_mode("light")
+        customtkinter.set_default_color_theme("blue")
+
+        self.paramWin.title('Settings (close when ready)')
+
+        frameMain               = customtkinter.CTkFrame(master=self.paramWin)
+        frameMain.pack(pady=20, padx=60, fill="both", expand=True)
+
+        # Add options
+        self.display_ports(frameMain)
+        self.display_protocol(frameMain)
+        self.display_gains(frameMain)
+        self.display_samplingrate(frameMain)
+        self.display_timerange(frameMain)
+        self.display_channels(frameMain)
+        
+        # Set GUI interaction behavior
+        self.paramWin.lift()
+        self.paramWin.attributes("-topmost", True)
+        self.paramWin.after_idle(self.paramWin.attributes, '-topmost', False)
 
         # Set closing sequence
         # -----------------------------------------------------------------
         # Just closing the window makes the sampling process hang. We 
         # prevent this by setting up a protocol.
-        self.master.protocol('WM_DELETE_WINDOW', self.on_closing)
-
-        self.padx = 25
-        self.pady = 15
-
-        self.display_logo()
-        self.display_ports()
-        self.display_gains()
-        self.display_timerange()
+        self.paramWin.protocol('WM_DELETE_WINDOW', self.on_closing)
         
     
     def get_screen_info(self):
@@ -96,93 +126,172 @@ class Parameters:
         root.destroy()
 
 
-    def display_logo(self):
+    def display_ports(self, master):
 
-        # multiple image size by zoom
-        pixels_x, pixels_y = tuple([int(0.01 * x) for x in Image.open(self.img_helment).size])
-        img = ImageTk.PhotoImage(Image.open(self.img_helment).resize((pixels_x, pixels_y)), master=self.master)
-        self.frameLogo = tk.Label(self.master, image=img)
-        self.frameLogo.image = img
-        self.frameLogo.grid(row=1, column=1, padx=self.padx, pady=self.pady)
+        ports = [port.name for port in list(serial.tools.list_ports.comports())]
+        if len(ports) == 0:
+            defaultPort = 'No port available'
+        else: 
+            defaultPort = ports[0]
+            self.port   = defaultPort # If no change, select_port does not get triggered
 
-
-    def display_ports(self):
-
-        ports = list(serial.tools.list_ports.comports())
-        portvar = tk.Variable(value=[port.name for port in ports])
-
-        lf = ttk.LabelFrame(self.master, text='Port')
-        lf.grid(row=1, column=2, padx=self.padx, pady=self.pady)
-
-        self.portlist = tk.Listbox(
-            master=lf,
-            listvariable=portvar,
-            height=12,
-            selectmode=tk.SINGLE)
-        self.portlist.pack()
-
-        # Update port upon selection
-        self.portlist.bind('<<ListboxSelect>>', self.select_port)
+        labelPort = customtkinter.CTkLabel(master=master, 
+                                            justify=customtkinter.LEFT,
+                                            text='Select port')
+        labelPort.pack(pady=10, padx=10)
+        portMenu = customtkinter.CTkOptionMenu(master, values=ports,
+                                               command=self.select_port)
+        portMenu.pack(pady=0, padx=10)
+        portMenu.set(defaultPort)
 
 
     def select_port(self, event):
 
-        selected_idx    = self.portlist.curselection()
-        self.port       = ''.join(self.portlist.get(selected_idx))
-        print('Selected port {}'.format(self.port))
+        self.port       = event
+        print('Port set to {}'.format(self.port))
 
 
-    def display_gains(self):
+    def display_protocol(self, master):
+
+        labelProt = customtkinter.CTkLabel(master=master, 
+                                            justify=customtkinter.LEFT,
+                                            text='Select connection protocol')
+        labelProt.pack(pady=10, padx=10)
+
+        self.prot_var  = tk.DoubleVar(value=self.firmfeedback)
+
+        protocolKeys = list(self.protocols.keys())
+        protocolVals = list(self.protocols.values())
+
+        for i in range(len(self.protocols)):
+            rb = customtkinter.CTkRadioButton(master=master,
+                                              variable=self.prot_var,
+                                              value=protocolVals[i],
+                                              text=str(protocolKeys[i]),
+                                              command=self.select_protocol)
+            rb.pack(pady=0, padx=10)
+
+
+    def select_protocol(self):
+        
+        self.firmfeedback = self.prot_var.get()
+        print('Will send a \"{}\" to board'.format(self.firmfeedback))
+
+
+    def display_gains(self, master):
 
         gains = ['2', '4', '8', '24']
         idx_def = [i for i in range(len(gains)) if int(gains[i]) == self.PGA]
 
-        lf = ttk.LabelFrame(self.master, text='PGA (gain)')
-        lf.grid(row=1, column=3, padx=self.padx, pady=self.pady)
-
-        self.gainlist = ttk.Combobox(
-            master=lf,
-            state="readonly",
-            values=gains,
-            height=12)
-        self.gainlist.current(idx_def)
-        self.gainlist.pack()
-
-        # Update port upon selection
-        self.gainlist.bind('<<ComboboxSelected>>', self.select_gain)
+        labelGain = customtkinter.CTkLabel(master=master, 
+                                            justify=customtkinter.LEFT,
+                                            text='Select gain')
+        labelGain.pack(pady=10, padx=10)
+        gainMenu = customtkinter.CTkOptionMenu(master, values=gains,
+                                                    command=self.select_gain)
+        gainMenu.pack(pady=0, padx=10)
+        gainMenu.set(gains[int(idx_def[0])])
 
 
     def select_gain(self, event):
 
-        self.PGA = self.gainlist.get()
-        print('Selected PGA {}'.format(self.PGA))
+        self.PGA = int(event)
+        print('PGA set to {}'.format(self.PGA))
 
 
-    def display_timerange(self):
+    def display_samplingrate(self, master):
+        
+        self.labelSfr = customtkinter.CTkLabel(master=master, 
+            justify=customtkinter.LEFT,
+            text='Current sampling rate is {} Hz.\nEnter a new one if desired (Hz)'.format(self.sample_rate))
+        self.labelSfr.pack(pady=10, padx=10)
 
-        lf = ttk.LabelFrame(self.master, text='Time range (s)')
-        lf.grid(row=1, column=4, padx=self.padx, pady=self.pady)
+        self.textSfr = customtkinter.CTkTextbox(master=master,
+                                           width=200, height=15)
+        self.textSfr.pack(pady=0, padx=10)
+        self.textSfr.insert("0.0", str(self.sample_rate))
 
-        self.trangeint = tk.IntVar()
-        self.timerangeval = tk.Entry(
-            master=lf,
-            validate='all',
-            textvariable=self.trangeint)
-        self.timerangeval.insert("end", 'Default: 20')
-        self.timerangeval.pack()
+        buttonValidate = customtkinter.CTkButton(master=master,
+                                                 command=self.select_sampling_rate,
+                                                 text='Register new sampl. rate')
+        buttonValidate.pack(pady=5, padx=10)
 
-        valbutton = ttk.Button(lf, text="Validate", command=self.select_timerange)
-        valbutton.pack(fill='x', expand=True, pady=10)
+
+    def select_sampling_rate(self):
+
+        try:
+            self.sample_rate = int(self.textSfr.get(0.0, tk.END))
+            self.labelSfr.configure(
+                text='Current sampling rate is {} Hz.\nEnter a new one if desired (Hz)'.format(self.sample_rate))
+            print('Sampling rate set to {}.'.format(self.sample_rate))
+        except:
+            print('Please enter an integer value. Reverting back to default...')
+            self.textSfr.insert("0.0", str(self.sample_rate))
+
+
+    def display_timerange(self, master):
+
+        labelRange = customtkinter.CTkLabel(master=master, 
+                                            justify=customtkinter.LEFT,
+                                            text='Select time range to display')
+        labelRange.pack(pady=10, padx=10)
+        
+        ranges          = [5, 10, 20]
+        idx_def         = [i for i in range(len(ranges)) if int(ranges[i]) == self.buffer_length]
+
+        self.range_var = customtkinter.IntVar(value=ranges[int(idx_def[0])])
+
+        for i in range(len(ranges)):
+            rb = customtkinter.CTkRadioButton(master=master,
+                                              variable=self.range_var,
+                                              value=ranges[i],
+                                              text=str(ranges[i]) + ' s',
+                                              command=self.select_timerange)
+            rb.pack(pady=0, padx=10)
 
 
     def select_timerange(self):
-        try:
-            self.buffer_length = self.trangeint.get()
-        except:
-            print('/!\\ Expected an integer number. Reverting to default value (20 s)')
-        print('Selected time range to display {} s'.format(self.buffer_length))
+        
+        self.buffer_length = self.range_var.get()
+        print('Time range to display set to {} s'.format(self.buffer_length))
 
+
+    def display_channels(self, master):
+
+        labelChans = customtkinter.CTkLabel(master=master, 
+                                            justify=customtkinter.LEFT,
+                                            text='Channels to display (*))')
+        labelChans.pack(pady=10, padx=10)
+
+        self.channels = []
+        for i in range(self.max_chans):
+            self.channels.append(tk.BooleanVar())
+            cb = customtkinter.CTkCheckBox(master=master,
+                                            text='Channel ' + str(i+1),
+                                            command=self.select_channels,
+                                            variable=self.channels[i],
+                                            onvalue=True,
+                                            offvalue=False)
+            cb.select()
+            cb.pack(pady=0, padx=10)
+
+        labelInfo = customtkinter.CTkLabel(master=master, 
+                                            justify=customtkinter.LEFT,
+                                            text='(*) This setting only affects the visualization.\nAll channelswill be processed and stored in output files')
+        labelInfo.pack(pady=10, padx=10)
+
+
+    def select_channels(self):
+
+        for i in range(len(self.channels)):
+            if self.selected_chans[i] != self.channels[i].get():
+                self.selected_chans[i] = self.channels[i].get()
+                if self.channels[i].get():
+                    print('Channel {} enabled'.format(i))
+                else:
+                    print('Channel {} disabled'.format(i))
+        
 
     def on_closing(self):
 
-        self.master.destroy()
+        self.paramWin.destroy()

@@ -1,13 +1,13 @@
 import serial #Crucial: Install using pip3 install "pyserial", NOT "serial"
 import serial.tools.list_ports
-import parameters                   as p
 import time
 
 class ConfigureBoard:
 
-    def __init__(self):
-
-        self.search_device()
+    def __init__(self, parameter):
+        
+        self.pm             = parameter
+        # self.search_device()
         self.connect_board()
 
 
@@ -28,7 +28,7 @@ class ConfigureBoard:
         ports = list(serial.tools.list_ports.comports())
 
         dummyser                = serial.Serial()
-        dummyser.baudrate       = p.baud_rate
+        dummyser.baudrate       = self.pm.baud_rate
         dummyser.timeout        = 1
         dummyser.write_timeout  = 1
         for port in ports:
@@ -76,20 +76,14 @@ class ConfigureBoard:
 
         # Open communication protocol
         self.ser            = serial.Serial()
-        self.ser.baudrate   = p.baud_rate
-        self.ser.timeout    = p.time_out
-        if self.av_ports["BT"] != None: # Priority
-            self.ser.port   = self.av_ports["BT"]
-            self.des_state  = 3
-            str_comtype = 'Board prepared to receive input via Bluetooth'
-        elif self.av_ports["USB"] != None: # Fallback solution
-            self.ser.port   = self.av_ports["USB"]
-            self.des_state  = 2
-            str_comtype = 'Board prepared to receive input via USB'
+        self.ser.baudrate   = self.pm.baud_rate
+        self.ser.timeout    = self.pm.time_out
+        self.ser.port       = self.pm.port
+        str_comtype = 'Board prepared to receive input via USB'
         self.ser.open() # Resets automatically the board
         print(str_comtype)
 
-        self.inform_board(self.des_state)
+        self.inform_board(self.pm.firmfeedback)
 
 
     def inform_board(self, state):
@@ -99,12 +93,8 @@ class ConfigureBoard:
         elif state == 1: # Standby mode of the board
             print('Putting board to standby. Waiting for new state...')
         elif state == 2: # Start sampling
-            if self.av_ports["USB"] == None:
-                raise Exception('USB was chosen but is not available')
             print('Preparing sampling via USB')
         elif state == 3: # Start sampling
-            if self.av_ports["BT"] == None:
-                raise Exception('Bluetooth was chosen but is not available')
             print('Preparing sampling via Bluetooth')
         elif state == 4: # Configuration mode
             print('Not implemented: Send configuration')

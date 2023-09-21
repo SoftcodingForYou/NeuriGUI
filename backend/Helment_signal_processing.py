@@ -1,14 +1,13 @@
 import scipy.signal
-import parameters                   as p
 import numpy                        as np
 
 
 class Processing():
 
-    def __init__(self):
+    def __init__(self, parameters):
 
+        self.pm                 = parameters
         self.prepare_filters()
-        self.numchans           = p.buffer_channels
 
 
     def prepare_filters(self):
@@ -16,32 +15,32 @@ class Processing():
         # Bandpass filters
         # -----------------------------------------------------------------
         self.b_detrend, self.a_detrend          = scipy.signal.butter(
-            p.filter_order, p.frequency_bands["Whole"][0],
-            btype='highpass', fs=p.sample_rate)
+            self.pm.filter_order, self.pm.frequency_bands["Whole"][0],
+            btype='highpass', fs=self.pm.sample_rate)
         self.b_wholerange, self.a_wholerange    = scipy.signal.butter(
-            p.filter_order, p.frequency_bands["Whole"],
-            btype='bandpass', fs=p.sample_rate)
+            self.pm.filter_order, self.pm.frequency_bands["Whole"],
+            btype='bandpass', fs=self.pm.sample_rate)
         self.b_sleep, self.a_sleep              = scipy.signal.butter(
-            p.filter_order, p.frequency_bands["Sleep"],
-            btype='bandpass', fs=p.sample_rate)
+            self.pm.filter_order, self.pm.frequency_bands["Sleep"],
+            btype='bandpass', fs=self.pm.sample_rate)
         self.b_theta, self.a_theta              = scipy.signal.butter(
-            p.filter_order, p.frequency_bands["Theta"],
-            btype='bandpass', fs=p.sample_rate)
+            self.pm.filter_order, self.pm.frequency_bands["Theta"],
+            btype='bandpass', fs=self.pm.sample_rate)
         self.b_notch, self.a_notch              = scipy.signal.butter(
-            p.filter_order, p.frequency_bands["LineNoise"],
-            btype='bandstop', fs=p.sample_rate)
+            self.pm.filter_order, self.pm.frequency_bands["LineNoise"],
+            btype='bandstop', fs=self.pm.sample_rate)
         self.b_notch60, self.a_notch60          = scipy.signal.butter(
-            p.filter_order, p.frequency_bands["LineNoise60"],
-            btype='bandstop', fs=p.sample_rate)
+            self.pm.filter_order, self.pm.frequency_bands["LineNoise60"],
+            btype='bandstop', fs=self.pm.sample_rate)
 
         # Determine padding length for signal filtering
         # -----------------------------------------------------------------
         default_pad     = 3 * max(len(self.a_wholerange), 
             len(self.b_wholerange))
-        if default_pad > p.buffer_length * p.sample_rate/10-1:
+        if default_pad > self.pm.buffer_length * self.pm.sample_rate/10-1:
             self.padlen = int(default_pad) # Scipy expects int
         else:
-            self.padlen = int(p.buffer_length*p.sample_rate/10-1) # Scipy expects int
+            self.padlen = int(self.pm.buffer_length*self.pm.sample_rate/10-1) # Scipy expects int
 
 
     def filter_signal(self, signal, b, a):
@@ -80,7 +79,7 @@ class Processing():
 
         downsampled_signal  = np.zeros((buffer.shape[0], int(buffer.shape[1]/s_down)))
         idx_retain = range(0, buffer.shape[1], s_down)
-        for iChan in range(self.numchans):
+        for iChan in range(self.pm.max_chans):
             # downsampled_signal[iChan,] = scipy.signal.decimate(buffer[iChan,], s_down)
             downsampled_signal[iChan,] = buffer[iChan,idx_retain]
 
@@ -101,7 +100,7 @@ class Processing():
         # =================================================================
         noise_free_signal   = np.zeros(buffer.shape)
         filtered_buffer     = np.zeros(buffer.shape)
-        for iChan in range(self.numchans):
+        for iChan in range(self.pm.max_chans):
 
             # Reject ambiant electrical noise (at 50 Hz)
             # -------------------------------------------------------------

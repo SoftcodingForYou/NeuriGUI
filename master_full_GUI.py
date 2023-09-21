@@ -12,7 +12,7 @@ import sys  # We need sys so that we can pass argv to QApplication
 import os
 
 
-class MainWindow(QtWidgets.QMainWindow, Processing):
+class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, *args, **kwargs):
 
@@ -22,22 +22,29 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         # -----------------------------------------------------------------
         pm = Parameters()
 
+        proc = Processing(pm)
+
         # Splash screen
         # -----------------------------------------------------------------
         auxgui              = Aux()
         splash, pb          = auxgui.disp_splash()
         auxgui.report_progress(splash, pb, 5)
 
-        guiwidgets          = GUIWidgets(self)
+        guiwidgets          = GUIWidgets(self, proc, pm)
+
+        # Inherit processing functions that will be used during plot update
+        guiwidgets.prepare_buffer   = proc.prepare_buffer
+        guiwidgets.extract_envelope = proc.extract_envelope
+
         auxgui.report_progress(splash, pb, 5)
 
         # Load methods and build communication with EEG board
         # -----------------------------------------------------------------
-        ParamVal()                              # Sanity checks
+        ParamVal(pm)                              # Sanity checks
         auxgui.report_progress(splash, pb, 5)
-        confboard           = ConfigureBoard()  # Board communication
+        confboard           = ConfigureBoard(pm)  # Board communication
         auxgui.report_progress(splash, pb, 20)
-        sampl               = Sampling()        # Signal handling
+        sampl               = Sampling(pm)        # Signal handling
         auxgui.report_progress(splash, pb, 5)
 
         # Build GUI
@@ -85,9 +92,9 @@ class MainWindow(QtWidgets.QMainWindow, Processing):
         # -----------------------------------------------------------------
         self.sampling    = Process(target=sampl.fetch_sample,
             args=(self.send_conn, confboard.ser, 
-            confboard.av_ports, confboard.des_state))
+            pm.port, pm.firmfeedback))
         
-        if confboard.des_state == 2 or confboard.des_state == 3:
+        if pm.firmfeedback == 2 or pm.firmfeedback == 3:
             self.sampling.start()
         auxgui.report_progress(splash, pb, 10)
         

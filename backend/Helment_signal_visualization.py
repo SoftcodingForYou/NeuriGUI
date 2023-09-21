@@ -1,18 +1,17 @@
 import time
 import keyboard
-import parameters                   as p
 import numpy                        as np
 import matplotlib.pyplot            as plt
 
 
 class Plotting():
 
-    def __init__(self):
-        self.plot_intv  = p.plot_intv
-        self.numchans   = p.buffer_channels
-        self.samplerate = p.sample_rate
-        self.numsamples = p.num_samples_vis
-        self.yrange     = p.yrange
+    def __init__(self, parameter):
+        self.plot_intv  = parameter.plot_intv
+        self.numchans   = parameter.max_chans
+        self.samplerate = parameter.sample_rate
+        self.numsamples = parameter.num_samples_vis
+        self.yrange     = parameter.yrange
         self.plot_time  = 0
 
 

@@ -1,53 +1,55 @@
 #Prepare userland =========================================================
-import parameters                           as p
-from backend.Helment_signal_processing      import Processing
 from PyQt5                                  import QtCore, QtWidgets, QtGui
 from pyqtgraph                              import PlotWidget
 import pyqtgraph                            as pg
 import numpy                                as np
-import os.path
 
 
-class GUIWidgets(Processing):
+class GUIWidgets():
 
-    def __init__(self, mainwindow):
+    def __init__(self, mainwindow, processing, parameter):
 
         super(GUIWidgets, self).__init__() # Init Processing class first
 
         # Load parameters
         # -----------------------------------------------------------------
-        self.numchans       = p.buffer_channels
-        self.numsamples     = int(p.sample_rate * p.buffer_length)
-        self.left_edge      = int(p.sample_rate * p.buffer_add)
-        self.samplerate     = p.sample_rate
+        self.displ_chans    = [i for i in range(parameter.max_chans) if parameter.selected_chans[i]]
+        self.numchans       = len(self.displ_chans)
+        self.numsamples     = int(parameter.sample_rate * parameter.buffer_length)
+        self.left_edge      = int(parameter.sample_rate * parameter.buffer_add)
+        self.samplerate     = parameter.sample_rate
         self.count          = 0
-        self.s_down         = p.s_down
-        self.idx_retain     = range(0, int(p.sample_rate * p.buffer_length), p.s_down)
-        self.yrange         = p.yrange
-        self.notch          = p.notch
-        self.bpass          = p.bpass
-        self.denv           = p.dispenv
+        self.s_down         = parameter.s_down
+        self.idx_retain     = range(0, int(parameter.sample_rate * parameter.buffer_length), parameter.s_down)
+        self.yrange         = parameter.yrange
+        self.notch          = parameter.notch
+        self.bpass          = parameter.bpass
+        self.denv           = parameter.dispenv
+        self.yrange         = parameter.yrange
 
         # Defaults
         self.streaming      = True
         self.envelope       = False
-        self.bSB            = self.b_notch
-        self.aSB            = self.a_notch
-        self.bPB            = self.b_wholerange
-        self.aPB            = self.a_wholerange
+        self.bSB            = processing.b_notch
+        self.aSB            = processing.a_notch
+        self.bPB            = processing.b_wholerange
+        self.aPB            = processing.a_wholerange
         self.lighttheme     = QtGui.QGuiApplication.palette()
         self.darktheme      = self.define_darktheme()
+        self.darkmode       = parameter.darkmode
         self.mainwindow     = mainwindow
 
-        if os.path.exists('./frontend/darkmode.txt'):
-            with open('./frontend/darkmode.txt') as f:
-                themeline   = f.read()
-                if themeline == 'Darkmode=1':
-                    self.darkmode = True
-                else:
-                    self.darkmode = False
-        else:
-            self.darkmode = False
+        self.proc           = processing
+
+        # if os.path.exists('./frontend/darkmode.txt'):
+        #     with open('./frontend/darkmode.txt') as f:
+        #         themeline   = f.read()
+        #         if themeline == 'Darkmode=1':
+        #             self.darkmode = True
+        #         else:
+        #             self.darkmode = False
+        # else:
+        #     self.darkmode = False
 
 
     def initiate_theme(self):
@@ -276,7 +278,7 @@ class GUIWidgets(Processing):
             self.signalgraph[iChan].setAntialiasing(False)  # Huge performance gain and 
                                                 # necessary to keep up with 
                                                 # the sampling rate
-            self.signalgraph[iChan].setYRange(p.yrange[0], p.yrange[1])
+            self.signalgraph[iChan].setYRange(self.yrange[0], self.yrange[1])
             self.signalgraph[iChan].setRange(
                 yRange=(self.yrange[0], self.yrange[1]), 
                 padding=0, disableAutoRange=True)
@@ -329,7 +331,7 @@ class GUIWidgets(Processing):
         # -------------------------------------------------------------
         for iChan in range(self.numchans):
             if self.streaming == True:
-                self.y[iChan] = processed_buffer[iChan, self.idx_retain]
+                self.y[iChan] = processed_buffer[self.displ_chans[iChan], self.idx_retain]
             
             self.data_line[iChan].setData(self.x, self.y[iChan])  # Update the data
 
@@ -352,12 +354,12 @@ class GUIWidgets(Processing):
         choice = int(choice)
         if choice == 50:
             print('Enabled 50 Hz stopband filter')
-            self.bSB    = self.b_notch
-            self.aSB    = self.a_notch
+            self.bSB    = self.proc.b_notch
+            self.aSB    = self.proc.a_notch
         elif choice == 60:
             print('Enabled 60 Hz stopband filter')
-            self.bSB    = self.b_notch60
-            self.aSB    = self.a_notch60
+            self.bSB    = self.proc.b_notch60
+            self.aSB    = self.proc.a_notch60
         elif choice == 0:
             print('Notch filter disabled')
             self.bSB    = np.array([None, None]) # Avoiding bool not iterable
@@ -372,20 +374,20 @@ class GUIWidgets(Processing):
             self.aPB        = np.array([None, None])
         elif choice == 0:
             print('Highpass filter from 0.1 Hz')
-            self.bPB        = self.b_detrend
-            self.aPB        = self.a_detrend
+            self.bPB        = self.proc.b_detrend
+            self.aPB        = self.proc.a_detrend
         elif choice == 1:
             print('Bandpass filter between 0.1 and 45 Hz')
-            self.bPB        = self.b_wholerange
-            self.aPB        = self.a_wholerange
+            self.bPB        = self.proc.b_wholerange
+            self.aPB        = self.proc.a_wholerange
         elif choice == 2:
             print('Bandpass filter between 1 and 30 Hz')
-            self.bPB        = self.b_sleep
-            self.aPB        = self.a_sleep
+            self.bPB        = self.proc.b_sleep
+            self.aPB        = self.proc.a_sleep
         elif choice == 3:
             print('Bandpass filter between 4 and 8 Hz')
-            self.bPB        = self.b_theta
-            self.aPB        = self.a_theta
+            self.bPB        = self.proc.b_theta
+            self.aPB        = self.proc.a_theta
 
 
     def yrange_selection(self, choice):

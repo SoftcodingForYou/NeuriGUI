@@ -20,9 +20,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Set parameters
         # -----------------------------------------------------------------
-        pm = Parameters()
+        pm                  = Parameters()
+        ParamVal(pm)        # Sanity checks
 
-        proc = Processing(pm)
+        # Initialize filter coefficient arrays
+        # -----------------------------------------------------------------
+        proc                = Processing(pm)
 
         # Splash screen
         # -----------------------------------------------------------------
@@ -40,7 +43,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Load methods and build communication with EEG board
         # -----------------------------------------------------------------
-        ParamVal(pm)                              # Sanity checks
         auxgui.report_progress(splash, pb, 5)
         confboard           = ConfigureBoard(pm)  # Board communication
         auxgui.report_progress(splash, pb, 20)

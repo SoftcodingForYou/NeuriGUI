@@ -14,7 +14,10 @@ class Sampling():
         #Output
         t0              = str(datetime.now())
         t0              = t0.replace(':', '_')
-        file_name       = 'Helment ' + t0 + '.txt'
+        if parameter.set_customsession:
+            file_name   = parameter.sessionName + '.txt'
+        else:
+            file_name   = 'Helment ' + t0 + '.txt'
 
         self.py_start   = round(time.perf_counter() * 1000, 0)
         self.pga        = parameter.PGA

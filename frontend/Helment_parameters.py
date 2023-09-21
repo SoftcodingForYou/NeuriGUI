@@ -37,6 +37,7 @@ class Parameters:
         self.notch          = 0 # Integer 0 (Off), 50 (50 Hz) or 60 (60 Hz)
         self.bpass          = 0 # Integer -1 to 3 according to number of options in "frequency_bands" below
         self.dispenv        = False # Boolean 0 (Off), 1 (On)
+        self.set_customsession = False
 
         #Signal arrays
         self.sample_rate    = 200 #Hertz
@@ -76,12 +77,17 @@ class Parameters:
 
 
     def build_frontend(self):
+
+        self.framePadX          = 20
+        self.framePadY          = 10
+        self.widgetPadX         = 10
+        self.widgetPadY         = 5
         
         # Build GUI
         # -----------------------------------------------------------------
-        self.paramWin                = customtkinter.CTk()
+        self.paramWin           = customtkinter.CTk()
         pixels_x, pixels_y      = int(
-            round(0.4*self.screen_width)), int(round(0.8*self.screen_height))
+            round(0.5*self.screen_width)), int(round(0.6*self.screen_height))
         x_cordinate, y_cordinate= int((self.screen_width/2) - (pixels_x/2)), int(0)
         self.paramWin.geometry("{}x{}+{}+{}".format(
             pixels_x, pixels_y, x_cordinate, y_cordinate))
@@ -94,16 +100,14 @@ class Parameters:
 
         self.paramWin.title('Settings (close when ready)')
 
-        frameMain               = customtkinter.CTkFrame(master=self.paramWin)
-        frameMain.pack(pady=20, padx=60, fill="both", expand=True)
-
         # Add options
-        self.display_ports(frameMain)
-        self.display_protocol(frameMain)
-        self.display_gains(frameMain)
-        self.display_samplingrate(frameMain)
-        self.display_timerange(frameMain)
-        self.display_channels(frameMain)
+        self.display_ports(self.add_frame_ext_x())
+        self.display_protocol(self.add_frame_ext_x())
+        self.display_gains(self.add_frame_ext_x())
+        self.display_samplingrate(self.add_frame_ext_x())
+        self.display_timerange(self.add_frame_ext_x())
+        self.display_channels(self.add_frame_ext_x())
+        self.display_output_name(self.add_frame_ext_x())
         
         # Set GUI interaction behavior
         self.paramWin.lift()
@@ -115,6 +119,12 @@ class Parameters:
         # Just closing the window makes the sampling process hang. We 
         # prevent this by setting up a protocol.
         self.paramWin.protocol('WM_DELETE_WINDOW', self.on_closing)
+
+
+    def add_frame_ext_x(self):
+        frameMain               = customtkinter.CTkFrame(master=self.paramWin)
+        frameMain.pack(pady=self.framePadY, padx=self.framePadX, fill="both", expand=True)
+        return frameMain
         
     
     def get_screen_info(self):
@@ -138,10 +148,10 @@ class Parameters:
         labelPort = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,
                                             text='Select port')
-        labelPort.pack(pady=10, padx=10)
+        labelPort.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
         portMenu = customtkinter.CTkOptionMenu(master, values=ports,
                                                command=self.select_port)
-        portMenu.pack(pady=0, padx=10)
+        portMenu.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
         portMenu.set(defaultPort)
 
 
@@ -156,7 +166,7 @@ class Parameters:
         labelProt = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,
                                             text='Select connection protocol')
-        labelProt.pack(pady=10, padx=10)
+        labelProt.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
 
         self.prot_var  = tk.DoubleVar(value=self.firmfeedback)
 
@@ -169,7 +179,7 @@ class Parameters:
                                               value=protocolVals[i],
                                               text=str(protocolKeys[i]),
                                               command=self.select_protocol)
-            rb.pack(pady=0, padx=10)
+            rb.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
 
 
     def select_protocol(self):
@@ -186,10 +196,10 @@ class Parameters:
         labelGain = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,
                                             text='Select gain')
-        labelGain.pack(pady=10, padx=10)
+        labelGain.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
         gainMenu = customtkinter.CTkOptionMenu(master, values=gains,
                                                     command=self.select_gain)
-        gainMenu.pack(pady=0, padx=10)
+        gainMenu.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
         gainMenu.set(gains[int(idx_def[0])])
 
 
@@ -203,30 +213,29 @@ class Parameters:
         
         self.labelSfr = customtkinter.CTkLabel(master=master, 
             justify=customtkinter.LEFT,
-            text='Current sampling rate is {} Hz.\nEnter a new one if desired (Hz)'.format(self.sample_rate))
-        self.labelSfr.pack(pady=10, padx=10)
+            text='Optional: Set sampling rate\nCaution: Setting wrong values\nwill corrupt data visualization')
+        self.labelSfr.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
 
-        self.textSfr = customtkinter.CTkTextbox(master=master,
-                                           width=200, height=15)
-        self.textSfr.pack(pady=0, padx=10)
-        self.textSfr.insert("0.0", str(self.sample_rate))
+        self.textSfr = customtkinter.CTkEntry(master=master,
+                                           width=200, height=15,
+                                           placeholder_text=str(self.sample_rate))
+        self.textSfr.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, fill=tk.X, expand=True)
 
-        buttonValidate = customtkinter.CTkButton(master=master,
+        self.buttonValidate = customtkinter.CTkButton(master=master,
                                                  command=self.select_sampling_rate,
-                                                 text='Register new sampl. rate')
-        buttonValidate.pack(pady=5, padx=10)
+                                                 text='Validate')
+        self.buttonValidate.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
 
 
     def select_sampling_rate(self):
 
         try:
-            self.sample_rate = int(self.textSfr.get(0.0, tk.END))
-            self.labelSfr.configure(
-                text='Current sampling rate is {} Hz.\nEnter a new one if desired (Hz)'.format(self.sample_rate))
+            self.sample_rate = int(self.textSfr.get())
+            self.buttonValidate.configure(text='Sampling rate configured')
             print('Sampling rate set to {}.'.format(self.sample_rate))
         except:
             print('Please enter an integer value. Reverting back to default...')
-            self.textSfr.insert("0.0", str(self.sample_rate))
+            self.textSfr.configure(placeholder_text='Sampling rate changed to ' + str(self.sample_rate))
 
 
     def display_timerange(self, master):
@@ -234,7 +243,7 @@ class Parameters:
         labelRange = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,
                                             text='Select time range to display')
-        labelRange.pack(pady=10, padx=10)
+        labelRange.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
         
         ranges          = [5, 10, 20]
         idx_def         = [i for i in range(len(ranges)) if int(ranges[i]) == self.buffer_length]
@@ -247,7 +256,7 @@ class Parameters:
                                               value=ranges[i],
                                               text=str(ranges[i]) + ' s',
                                               command=self.select_timerange)
-            rb.pack(pady=0, padx=10)
+            rb.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
 
 
     def select_timerange(self):
@@ -260,25 +269,25 @@ class Parameters:
 
         labelChans = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,
-                                            text='Channels to display (*))')
-        labelChans.pack(pady=10, padx=10)
+                                            text='Channels to display\n(Only affects the visualization)')
+        labelChans.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
 
         self.channels = []
         for i in range(self.max_chans):
             self.channels.append(tk.BooleanVar())
             cb = customtkinter.CTkCheckBox(master=master,
-                                            text='Channel ' + str(i+1),
+                                            text='Ch. ' + str(i+1),
                                             command=self.select_channels,
                                             variable=self.channels[i],
                                             onvalue=True,
                                             offvalue=False)
             cb.select()
-            cb.pack(pady=0, padx=10)
+            cb.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
 
         labelInfo = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,
-                                            text='(*) This setting only affects the visualization.\nAll channelswill be processed and stored in output files')
-        labelInfo.pack(pady=10, padx=10)
+                                            text='')
+        labelInfo.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.RIGHT)
 
 
     def select_channels(self):
@@ -290,6 +299,35 @@ class Parameters:
                     print('Channel {} enabled'.format(i))
                 else:
                     print('Channel {} disabled'.format(i))
+
+
+    def display_output_name(self, master):
+        
+        self.sessionName = 'Helment_[timestamp]'
+        self.labelSession = customtkinter.CTkLabel(master=master, 
+            justify=customtkinter.CENTER,
+            text='Optional: Set a session name')
+        self.labelSession.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
+
+        self.textSession = customtkinter.CTkEntry(master=master,
+                                           width=250, height=15,
+                                           placeholder_text='Default: ' + self.sessionName)
+        self.textSession.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.sessionValidate = customtkinter.CTkButton(master=master,
+                                                 command=self.select_output_name,
+                                                 text='Validate')
+        self.sessionValidate.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
+
+
+    def select_output_name(self):
+
+        self.sessionName = str(self.textSession.get())
+        self.sessionName = self.sessionName.replace('\n', '')
+        self.set_customsession = True
+        self.textSession.configure(placeholder_text='Session name changed to ' + str(self.sessionName))
+        self.sessionValidate.configure(text='Session name configured')
+        print('Session named \"{}\".'.format(self.sessionName))
         
 
     def on_closing(self):

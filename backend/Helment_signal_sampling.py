@@ -194,7 +194,7 @@ class Sampling():
             print('Ordered board to send data via Bluetooth. Switching mode ...')
 
         # Open communication ----------------------------------------------
-        if ser.port == None:
+        if ser.port == '':
             raise Exception('Verify that desired connection type (USB or Bluetooth) are indeed available')
         else:
             ser.open()

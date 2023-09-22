@@ -1,4 +1,5 @@
 import tkinter                              as tk
+from sys                                    import platform
 import serial.tools.list_ports
 import customtkinter
 import os
@@ -10,8 +11,6 @@ class Parameters:
         super(Parameters, self).__init__()
 
         self.set_defaults()
-        self.img_helment    = './frontend/Isotipo-Helment-color.png'
-
         self.get_screen_info()
         self.build_frontend()
 
@@ -20,8 +19,11 @@ class Parameters:
 
 
     def set_defaults(self):
+
+        self.all_set        = False
         
         #GUI settings
+        self.img_helment    = './frontend/Isotipo-Helment-color.png'
         if os.path.exists('./frontend/darkmode.txt'):
             with open('./frontend/darkmode.txt') as f:
                 themeline   = f.read()
@@ -87,7 +89,7 @@ class Parameters:
         # -----------------------------------------------------------------
         self.paramWin           = customtkinter.CTk()
         pixels_x, pixels_y      = int(
-            round(0.5*self.screen_width)), int(round(0.6*self.screen_height))
+            round(0.5*self.screen_width)), int(round(0.9*self.screen_height))
         x_cordinate, y_cordinate= int((self.screen_width/2) - (pixels_x/2)), int(0)
         self.paramWin.geometry("{}x{}+{}+{}".format(
             pixels_x, pixels_y, x_cordinate, y_cordinate))
@@ -108,6 +110,7 @@ class Parameters:
         self.display_timerange(self.add_frame_ext_x())
         self.display_channels(self.add_frame_ext_x())
         self.display_output_name(self.add_frame_ext_x())
+        self.display_speed_up(self.add_frame_ext_x())
         
         # Set GUI interaction behavior
         self.paramWin.lift()
@@ -138,7 +141,7 @@ class Parameters:
 
     def display_ports(self, master):
 
-        ports = [port.name for port in list(serial.tools.list_ports.comports())]
+        ports = [port.device for port in list(serial.tools.list_ports.comports())]
         if len(ports) == 0:
             defaultPort = 'No port available'
         else: 
@@ -153,6 +156,20 @@ class Parameters:
                                                command=self.select_port)
         portMenu.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
         portMenu.set(defaultPort)
+
+        infoText = """
+            You seem to use a GNU/Linux-based OS. Make sure you are part of
+            the "dialout" and "uucp" groups by running:
+                > sudo usermod -a -G dialout $USER
+                > sudo usermod -a -G uucp $USER
+            in the terminal in order to use the system's ports without root.
+        """
+
+        if platform == "linux" or platform == "linux2":
+            labelLinux = customtkinter.CTkLabel(master=master, 
+                                            justify=customtkinter.LEFT,
+                                            text=infoText)
+            labelLinux.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.RIGHT)
 
 
     def select_port(self, event):
@@ -213,8 +230,13 @@ class Parameters:
         
         self.labelSfr = customtkinter.CTkLabel(master=master, 
             justify=customtkinter.LEFT,
-            text='Optional: Set sampling rate\nCaution: Setting wrong values\nwill corrupt data visualization')
+            text='Optional: Set sampling rate')
         self.labelSfr.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
+
+        self.labelInfo = customtkinter.CTkLabel(master=master, 
+            justify=customtkinter.LEFT,
+            text='Caution: Setting wrong values will corrupt data visualization')
+        self.labelInfo.pack(pady=(0, self.widgetPadY), padx=self.widgetPadX, side=tk.BOTTOM)
 
         self.textSfr = customtkinter.CTkEntry(master=master,
                                            width=200, height=15,
@@ -230,12 +252,22 @@ class Parameters:
     def select_sampling_rate(self):
 
         try:
-            self.sample_rate = int(self.textSfr.get())
-            self.buttonValidate.configure(text='Sampling rate configured')
-            print('Sampling rate set to {}.'.format(self.sample_rate))
+            newSR = int(self.textSfr.get())
+
+            if newSR >= 100:
+                self.sample_rate = newSR
+                self.labelInfo.configure(text='Sampling rate set to {} Hz'.format(self.sample_rate),
+                                        text_color='green')
+                print('Sampling rate set to {}.'.format(self.sample_rate))
+            else:
+                print('Sampling rate must be at least 100 Hz. Reverting back to {} Hz'.format(self.sample_rate))
+                self.labelInfo.configure(text='Sampling rate must be at least 100 Hz. Reverting back to {} Hz'.format(self.sample_rate),
+                                        text_color='red')
+                self.textSfr.configure(placeholder_text='Sampling rate changed to ' + str(self.sample_rate))
         except:
-            print('Please enter an integer value. Reverting back to default...')
-            self.textSfr.configure(placeholder_text='Sampling rate changed to ' + str(self.sample_rate))
+            print('Please enter an integer value. Reverting back to {} Hz'.format(self.sample_rate))
+            self.labelInfo.configure(text='Please enter an integer value. Reverting back to {} Hz'.format(self.sample_rate),
+                                     text_color='red')
 
 
     def display_timerange(self, master):
@@ -309,6 +341,11 @@ class Parameters:
             text='Optional: Set a session name')
         self.labelSession.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
 
+        self.sessionInfo = customtkinter.CTkLabel(master=master, 
+            justify=customtkinter.LEFT,
+            text='')
+        self.sessionInfo.pack(pady=(0, self.widgetPadY), padx=self.widgetPadX, side=tk.BOTTOM)
+
         self.textSession = customtkinter.CTkEntry(master=master,
                                            width=250, height=15,
                                            placeholder_text='Default: ' + self.sessionName)
@@ -322,12 +359,51 @@ class Parameters:
 
     def select_output_name(self):
 
-        self.sessionName = str(self.textSession.get())
-        self.sessionName = self.sessionName.replace('\n', '')
-        self.set_customsession = True
-        self.textSession.configure(placeholder_text='Session name changed to ' + str(self.sessionName))
-        self.sessionValidate.configure(text='Session name configured')
-        print('Session named \"{}\".'.format(self.sessionName))
+        newSessionName      = str(self.textSession.get())
+
+        if len(newSessionName) > 0:
+            self.sessionName    = newSessionName
+            self.sessionName    = self.sessionName.replace('\n', '')
+            self.set_customsession = True
+            self.sessionInfo.configure(text='Session name changed to ' + str(self.sessionName),
+                             text_color='green')
+            print('Session named \"{}\".'.format(self.sessionName))
+        else:
+            self.sessionInfo.configure(text='Custom name can not be empty',
+                             text_color='red')
+            print('Session name can not be empty')
+
+
+    def display_speed_up(self, master):
+
+        gains = ['2', '5', '10', '20', '30', '50']
+        idx_def = [i for i in range(len(gains)) if int(gains[i]) == self.s_down]
+
+        labelSpeed = customtkinter.CTkLabel(master=master, 
+                                            justify=customtkinter.LEFT,
+                                            text='Optional: Select downsampling intensity')
+        labelSpeed.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
+        SpeedMenu = customtkinter.CTkOptionMenu(master, values=gains,
+                                                    command=self.select_speed_up)
+        SpeedMenu.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
+        SpeedMenu.set(gains[int(idx_def[0])])
+
+        infoText = """
+            Selecting high amounts of channels and long time ranges to display can have impacts on the performance.
+            You might try to compensate this by setting a higher downsampling factor. This will downsample the data
+            for visualization (not the recorded data itself)
+            """
+
+        labelInfo = customtkinter.CTkLabel(master=master, 
+                                            justify=customtkinter.LEFT,
+                                            text=infoText)
+        labelInfo.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.RIGHT)
+
+
+    def select_speed_up(self, event):
+
+        self.s_down = int(event)
+        print('Downsampling intensity set to {}'.format(self.s_down))
         
 
     def on_closing(self):

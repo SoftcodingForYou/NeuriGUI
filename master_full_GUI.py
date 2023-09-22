@@ -29,9 +29,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Splash screen
         # -----------------------------------------------------------------
-        auxgui              = Aux()
-        splash, pb          = auxgui.disp_splash()
-        auxgui.report_progress(splash, pb, 5)
+        # auxgui              = Aux()
+        # splash, pb          = auxgui.disp_splash()
+        # auxgui.report_progress(splash, pb, 5)
 
         guiwidgets          = GUIWidgets(self, proc, pm)
 
@@ -39,22 +39,22 @@ class MainWindow(QtWidgets.QMainWindow):
         guiwidgets.prepare_buffer   = proc.prepare_buffer
         guiwidgets.extract_envelope = proc.extract_envelope
 
-        auxgui.report_progress(splash, pb, 5)
+        # auxgui.report_progress(splash, pb, 5)
 
         # Load methods and build communication with EEG board
         # -----------------------------------------------------------------
-        auxgui.report_progress(splash, pb, 5)
+        # auxgui.report_progress(splash, pb, 5)
         confboard           = ConfigureBoard(pm)  # Board communication
-        auxgui.report_progress(splash, pb, 20)
+        # auxgui.report_progress(splash, pb, 20)
         sampl               = Sampling(pm)        # Signal handling
-        auxgui.report_progress(splash, pb, 5)
+        # auxgui.report_progress(splash, pb, 5)
 
         # Build GUI
         # -----------------------------------------------------------------
         super(MainWindow, self).__init__(*args, **kwargs)
 
         self.setWindowTitle('Helment EEG GUI (raw data available at {}:{})'.format(sampl.udp_ip, sampl.udp_port))
-        self.setWindowIcon(QtGui.QIcon(auxgui.img_helment))
+        # self.setWindowIcon(QtGui.QIcon(auxgui.img_helment))
         self.central_widget = QtWidgets.QWidget() # A QWidget to work as Central Widget
 
         # Without specifying, this just makes the GUI separable vertically
@@ -73,7 +73,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         guiwidgets.initiate_theme() # Needs to be called after widget 
                                     # elements initiation since hard-coded
-        auxgui.report_progress(splash, pb, 15)
+        # auxgui.report_progress(splash, pb, 15)
 
         vertlayout.addLayout(controlpanel)
         controlpanel.addWidget(widget_vrange)
@@ -83,7 +83,7 @@ class MainWindow(QtWidgets.QMainWindow):
         controlpanel.addWidget(widget_sbtn)
         controlpanel.addWidget(widget_darkmode)
         vertlayout.addWidget(widget_signal)
-        auxgui.report_progress(splash, pb, 5)
+        # auxgui.report_progress(splash, pb, 5)
 
         # Generate variable exchange pipe
         # -----------------------------------------------------------------
@@ -98,12 +98,12 @@ class MainWindow(QtWidgets.QMainWindow):
         
         if pm.firmfeedback == 2 or pm.firmfeedback == 3:
             self.sampling.start()
-        auxgui.report_progress(splash, pb, 10)
+        # auxgui.report_progress(splash, pb, 10)
         
         ## Finalize
         self.setCentralWidget(self.central_widget)
         self.central_widget.setLayout(vertlayout) # Draw elements in main widget
-        auxgui.report_progress(splash, pb, 10)
+        # auxgui.report_progress(splash, pb, 10)
 
         self.timer          = QtCore.QTimer()
         self.timer.setInterval(0)
@@ -111,8 +111,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer.singleShot = False
         
         # Splash screen needs to be closed before timer start
-        auxgui.report_progress(splash, pb, 19)
-        splash.destroy()
+        # auxgui.report_progress(splash, pb, 19)
+        # splash.destroy()
         self.timer.start()
         
 

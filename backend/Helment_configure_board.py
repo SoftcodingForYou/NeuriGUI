@@ -79,11 +79,10 @@ class ConfigureBoard:
         self.ser.baudrate   = self.pm.baud_rate
         self.ser.timeout    = self.pm.time_out
         self.ser.port       = self.pm.port
-        str_comtype = 'Board prepared to receive input via USB'
-        self.ser.open() # Resets automatically the board
+        str_comtype = 'Board prepared to receive input'
         print(str_comtype)
 
-        self.inform_board(self.pm.firmfeedback)
+        # self.inform_board(self.pm.firmfeedback)
 
 
     def inform_board(self, state):
@@ -102,6 +101,8 @@ class ConfigureBoard:
             print('Resetting device')
 
         # Make board aware of key press: Set state of board
+        self.ser.open() # Resets automatically the board
+        time.sleep(1)
         state = bytes(str(state), 'utf-8')
         self.ser.write(state)
         self.ser.read(self.ser.inWaiting()) # Eliminate message queue at port

@@ -35,7 +35,7 @@ class Parameters:
             self.darkmode = False
 
         #Session-specific parameters
-        self.yrange         = [-1000, 1000] # List of scalars ([negative, positive]) in order to set figure y axis range
+        self.yrange         = [-0, 0] # List of scalars ([negative, positive]) in order to set figure y axis range
         self.notch          = 0 # Integer 0 (Off), 50 (50 Hz) or 60 (60 Hz)
         self.bpass          = 0 # Integer -1 to 3 according to number of options in "frequency_bands" below
         self.dispenv        = False # Boolean 0 (Off), 1 (On)
@@ -43,9 +43,9 @@ class Parameters:
 
         #Signal arrays
         self.sample_rate    = 200 #Hertz
-        self.max_chans      = 2 #scalar (Max. amount of input channels of board)
+        self.max_chans      = 8 #scalar (Max. amount of input channels of board)
         self.selected_chans = [True] * self.max_chans
-        self.buffer_length  = 20 #scalar (seconds)
+        self.buffer_length  = 10 #scalar (seconds)
         self.buffer_add     = 4 #scalar (seconds), we add this to the buffer for filtering to avoid edge artifacts
         self.sample_count   = 0 #integer zero
         self.saving_interval= 1 #scalar (seconds)

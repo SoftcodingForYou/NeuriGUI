@@ -21,3 +21,6 @@ class ParamVal():
 
         if len(p.port) == 0:
             raise Exception('No device set to connect to. Chose a valid COM port.')
+        
+        if (p.sample_rate * p.buffer_length / p.s_down) % 1 != 0:
+            raise Exception('Time range, sampling rate and downsample factor have to be set so that (time range * sampling rate / downscale factor is an integer.).')

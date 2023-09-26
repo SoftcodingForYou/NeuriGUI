@@ -67,7 +67,7 @@ class GUIWidgets():
         self.vert_range     = QtWidgets.QWidget()
         vertlayout          = QtWidgets.QVBoxLayout()
         horilayout          = QtWidgets.QHBoxLayout()
-        title               = QtWidgets.QLabel('Vert. range (uV)')
+        title               = QtWidgets.QLabel('Vertical range (uV)')
         rbtn1               = QtWidgets.QRadioButton('Auto')
         rbtn2               = QtWidgets.QRadioButton('100')
         rbtn3               = QtWidgets.QRadioButton('200')
@@ -255,7 +255,7 @@ class GUIWidgets():
         self.x              = list(range(-self.numsamples, 0, self.s_down))
         self.x              = [x/self.samplerate for x in self.x]
         self.xplot          = np.array(self.x) # Non-sense action to avoid pointers (force creation of other id())
-        self.y              = []
+        self.y              = np.zeros((self.numchans, int(self.numsamples/self.s_down)), dtype=float)
         self.data_line      = {}
         self.signalgraph    = {}
         self.penstyle       = {}
@@ -264,17 +264,19 @@ class GUIWidgets():
 
             self.signalgraph[iChan] = PlotWidget()
 
-            self.y.append([0 for _ in range(0, self.numsamples, self.s_down)])
-
             # Aesthetics
             self.signalgraph[iChan].setBackground('w')
-            self.signalgraph[iChan].setLabel('left', 'Amplitude (uV)')
-            self.signalgraph[iChan].setLabel('bottom', 'Time (s)')
-            self.signalgraph[iChan].showGrid(x=True, y=True)
+            self.signalgraph[iChan].setLabel('left', 'A (uV)')
+            if iChan == self.numchans -1:
+                self.signalgraph[iChan].setLabel('bottom', '')
+            else:
+                self.signalgraph[iChan].setLabel('bottom', '')
+                # self.signalgraph[iChan].getAxis('bottom').setTicks([])
+            self.signalgraph[iChan].showGrid(x=False, y=True)
             self.penstyle[iChan] = pg.mkPen(color=(49,130,189), width=2)
             
             # Decorate plot
-            legend = self.signalgraph[iChan].addLegend()
+            legend = self.signalgraph[iChan].addLegend(offset=(5, 0))
             self.signalgraph[iChan].setAntialiasing(False)  # Huge performance gain and 
                                                 # necessary to keep up with 
                                                 # the sampling rate
@@ -282,10 +284,13 @@ class GUIWidgets():
             self.signalgraph[iChan].setRange(
                 yRange=(self.yrange[0], self.yrange[1]), 
                 padding=0, disableAutoRange=True)
+            self.signalgraph[iChan].setMinimumSize(200, 50)
             
             # Set signal lines
             self.data_line[iChan] = self.signalgraph[iChan].plot(
-                self.xplot, self.y[iChan], name='Chan. {}'.format(str(iChan+1)), pen=self.penstyle[iChan])
+                self.xplot, self.y[iChan,:],
+                name='Ch. {}'.format(str(self.displ_chans[iChan]+1)),
+                pen=self.penstyle[iChan])
 
             # Disable interactivity
             self.signalgraph[iChan].setMouseEnabled(x=False, y=False)
@@ -293,6 +298,11 @@ class GUIWidgets():
             self.signalgraph[iChan].getPlotItem().setMenuEnabled(False)
             legend.mouseDragEvent = lambda *args, **kwargs: None
             legend.hoverEvent = lambda *args, **kwargs: None
+
+            # Fix sizes in order to avoid filling of white spaces
+            # self.signalgraph[iChan].getViewBox().size()
+            # self.signalgraph[iChan].getAxis('bottom').setWidth(
+            #     self.signalgraph[iChan].getAxis('bottom').size().width())
 
             vertlayout.addWidget(self.signalgraph[iChan])
 
@@ -325,22 +335,31 @@ class GUIWidgets():
 
         if self.streaming == True:
             self.xplot      = self.x
+
+        
+        # Downsample buffer
+        down_buffer = processed_buffer[:, self.idx_retain]
+
+        # Set vertical range
+        v_buffer    = np.reshape(down_buffer, down_buffer.size)
+        if self.yrange[1] == 0:
+            vscale = [-np.max(
+                [np.abs(np.min(v_buffer)), np.abs(np.max(v_buffer))]
+                ), np.max(
+                [np.abs(np.min(v_buffer)), np.abs(np.max(v_buffer))]
+                )]
+        else:
+            vscale = self.yrange
         
 
         # Update plots for every channel
         # -------------------------------------------------------------
         for iChan in range(self.numchans):
+
             if self.streaming == True:
-                self.y[iChan] = processed_buffer[self.displ_chans[iChan], self.idx_retain]
+                self.y[iChan,:] = down_buffer[self.displ_chans[iChan], :]
             
             self.data_line[iChan].setData(self.x, self.y[iChan])  # Update the data
-
-            # Set vertical range
-            if self.yrange[1] == 0:
-                vscale = [-np.max([np.abs(np.min(self.y[iChan])), np.abs(np.max(self.y[iChan]))]),
-                            np.max([np.abs(np.min(self.y[iChan])), np.abs(np.max(self.y[iChan]))])]
-            else:
-                vscale = self.yrange
 
             if self.envelope == True:
                 self.signalgraph[iChan].setYRange(0, vscale[1], padding=0)

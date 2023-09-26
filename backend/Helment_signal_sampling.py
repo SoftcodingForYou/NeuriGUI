@@ -37,6 +37,7 @@ class Sampling():
         self.saving_interval    = parameter.saving_interval * parameter.sample_rate # From parameters
         self.time_reset         = self.py_start
         self.sample_rate        = parameter.sample_rate
+        self.s_chans            = parameter.max_chans
 
         # Build relay connection for other programs
         self.build_relay(parameter.udp_ip)
@@ -95,90 +96,37 @@ class Sampling():
         return voltage
     
 
-    def data_checkpoint(self, str_message):
+    def channel_assignment(self, str_message):
         # -----------------------------------------------------------------
         # Extract samples from board
         # Input
         #   str_message Raw message string coming from board
-        # Parameters
-        #   value_len   Length of string for each value to be expected
-        value_len       = 7
-        # Output
+        # Default in case of faulty message
+        eeg_array       = np.expand_dims(
+            np.array([0] * self.s_chans, dtype=float), # Crucial to set float
+            axis=1)
+        eeg_valid       = False
         #   eeg_array   Numpy array (floats), being channels by samples
         #   eeg_valid   Boolean whether workable data or not
         # -----------------------------------------------------------------
-        
-        # Default in case of faulty message
-        eeg_array       = np.array(0, dtype=float)
-        eeg_valid       = False
 
-        # Basic checks
-        if 'c2' not in str_message:
+        str_message     = str_message[
+            str_message.find('{'):str_message.find('}')+1]
+        
+        # Build Python dictionnary
+        try:
+            chanDict        = json.loads(str_message)
+        except json.decoder.JSONDecodeError:
+            # Corrupt message: not all channels present
+            print("Skipped message")
+            return eeg_array, eeg_valid
+
+        if len(chanDict) != self.s_chans:
             return eeg_array, eeg_valid
         
-
-        # Strip all non-json format characters
-        str_message     = str_message[2:]
-        str_message     = str_message.replace("\'", "")
-        str_message     = str_message.replace("\\r", "")
-        str_message     = str_message.replace("\\n", "")
-
-        # Crucial garbage removal
-        str_message     = str_message.replace("\"", "")
-        str_message     = str_message.replace("{", "")
-        str_message     = str_message.replace("}", "")
-        str_message     = str_message.replace(":", "")
-        str_message     = str_message.replace("c1", "")
-
-        # We can not dejonsize at that point because we want to check data 
-        # for each channel individually
-        chans           = str_message.split('c2')
-
-        # Hard-coding not possible because of potentially missing parts 
-        # from message
-        if chans[0].find('[') == -1:
-            c1_start    = 0
-        else:
-            c1_start    = chans[0].find('[')+1
-        c1_stop         = chans[0].find(']')
-
-        if chans[1].find('[') == -1:
-            c2_start    = 0
-        else:
-            c2_start    = chans[1].find('[')+1
-        c2_stop         = chans[1].find(']')
-
-        c1_vals         = chans[0][c1_start:c1_stop].split(',')
-        c2_vals         = chans[1][c2_start:c2_stop].split(',')
-
-        # Adapt amount of channel samples
-        num_c1          = len(c1_vals)
-        num_c2          = len(c2_vals)
-        s_samples       = min(num_c1, num_c2)
-
-        if s_samples < num_c1:
-            c1_vals     = c1_vals[0:s_samples]
-        elif s_samples < num_c2:
-            c2_vals     = c2_vals[0:s_samples]
-
-        # Search for faulty values
-        false_vals      = [i for i in range(len(c1_vals)) if len(c1_vals[i]) != value_len] + [i for i in range(len(c2_vals)) if len(c2_vals[i]) != value_len]
-
-        # Take out this line below when known length of samples is implemented (Hexadecimal)
-        false_vals      = [i for i in range(len(c1_vals)) if len(c1_vals[i]) == 0] + [i for i in range(len(c2_vals)) if len(c2_vals[i]) == 0]
-        false_vals.sort()
-        if len(false_vals) > 0:
-            false_vals  = list(set(false_vals)) # Crucial: Sort and get uniques
-        for iPop in range(len(c1_vals)-1, -1, -1):
-            if iPop in false_vals:
-                print('Removed value')
-                c1_vals.pop(iPop)
-                c2_vals.pop(iPop)
-
-        if len(c1_vals) == 0:
-            return eeg_array, eeg_valid
-        
-        eeg_array       = np.array([c1_vals,c2_vals], dtype=float)
+        eeg_array       = np.expand_dims(
+            np.fromiter(chanDict.values(), dtype=float), # Crucial to set float
+            axis=1)
         eeg_valid       = True
         
         return eeg_array, eeg_valid
@@ -198,7 +146,7 @@ class Sampling():
             raise Exception('Verify that desired connection type (USB or Bluetooth) are indeed available')
         else:
             ser.open()
-            # time.sleep(5)
+            time.sleep(1)
 
         ser.write(bytes(str(desired_con), 'utf-8'))
         # time.sleep(1)
@@ -217,10 +165,10 @@ class Sampling():
 
 
         # Preallocate json relay message
-        relay_message = {}
-        relay_message["t"]  = ''
-        relay_message["c1"] = ''
-        relay_message["c2"] = ''
+        relay_array         = {}
+        relay_array["t"]    = ''
+        for iC in range(self.s_chans):
+            relay_array["".join(["c", str(iC+1)])] = ''
 
         for _ in range(1000):
             ser.read(ser.inWaiting())
@@ -229,15 +177,17 @@ class Sampling():
             
         while not ser.closed:
             
-            raw_message     = str(ser.readline())
+            raw_message             = str(ser.readline())
 
-            buffer_in, valid_eeg = self.data_checkpoint(raw_message)
+            buffer_in, valid_eeg    = self.channel_assignment(raw_message)
 
             if not valid_eeg:
+                # TO-DO: Implement an interpolation system
                 continue
 
             # Current timestamp -------------------------------------------
-            time_stamp_now  = round(time.perf_counter() * 1000, 0) - self.py_start
+            time_stamp_now          = round(
+                time.perf_counter() * 1000, 0) - self.py_start
             # This will generate unchanged time_stamps for all samples of 
             # the incoming bufer (= 10 in case of bluetooth), but that is
             # not a problem
@@ -250,25 +200,21 @@ class Sampling():
 
                 self.sample_count   = self.sample_count + 1
                 
-                sample          = buffer_in[:, iS]
+                sample              = buffer_in[:, iS]
 
                 # Convert binary to voltage values
                 for iBin in range(sample.size):
-                    sample[iBin] = self.bin_to_voltage(sample[iBin])
+                    sample[iBin]    = self.bin_to_voltage(sample[iBin])
+                    relay_array["".join(["c", str(iBin+1)])] = str(sample[iBin])
 
-                update_buffer   = np.concatenate((self.buffer, np.expand_dims(sample, 1)), axis=1)
-                update_times    = np.append(self.time_stamps, time_stamp_now)
+                update_buffer       = np.concatenate((self.buffer, np.expand_dims(sample, 1)), axis=1)
+                update_times        = np.append(self.time_stamps, time_stamp_now)
 
                 # Build new buffer and timestamp arrays
-                self.buffer     = update_buffer[:, 1:]
+                self.buffer         = update_buffer[:, 1:]
                 self.time_stamps= update_times[1:]
 
-                # Construct relay message -------------------------------------
-                relay_message["t"]  = str(time_stamp_now)
-                relay_message["c1"] = str(sample[0])
-                relay_message["c2"] = str(sample[1])
-
-                self.send_sock.sendto(bytes(json.dumps(relay_message), "utf-8"), (self.udp_ip, self.udp_port))
+                self.send_sock.sendto(bytes(json.dumps(relay_array), "utf-8"), (self.udp_ip, self.udp_port))
 
                 pipe_conn.send((self.buffer, time_stamp_now))
 

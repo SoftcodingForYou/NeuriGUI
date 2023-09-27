@@ -89,7 +89,7 @@ class Parameters:
         # -----------------------------------------------------------------
         self.paramWin           = customtkinter.CTk()
         pixels_x, pixels_y      = int(
-            round(0.5*self.screen_width)), int(round(0.9*self.screen_height))
+            round(0.8*self.screen_width)), int(round(0.9*self.screen_height))
         x_cordinate, y_cordinate= int((self.screen_width/2) - (pixels_x/2)), int(0)
         self.paramWin.geometry("{}x{}+{}+{}".format(
             pixels_x, pixels_y, x_cordinate, y_cordinate))

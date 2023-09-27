@@ -1,16 +1,19 @@
 import tkinter                              as tk
+from PIL                                    import Image, ImageTk
 
 class ParamVal():
 
     def __init__(self, p):
 
-        error_messages = self.verify_compatibility(p)
+        self.ico_helment    = './frontend/Isotipo-Helment-color.ico'
+
+        error_messages      = self.verify_compatibility(p)
         self.alert_user(error_messages)
 
 
     def verify_compatibility(self, p):
 
-        error_messages = []
+        error_messages      = []
 
         if p.saving_interval > p.buffer_length: #Checkpoint of parameters
             error_messages.append('Buffer can not be shorter than saving interval./nThis is a developer error and not your responsability as a user. Please contact the developers.')
@@ -38,8 +41,9 @@ class ParamVal():
         if len(messages) == 0:
             return
 
-        self.warn = tk.Tk()
-        self.warn.iconbitmap('./frontend/Isotipo-Helment-color.ico')
+        self.warn           = tk.Tk()
+        photo = ImageTk.PhotoImage(Image.open(self.ico_helment))
+        self.warn.wm_iconphoto(True, photo)
         # self.warn.geometry("{}x{}".format(400, 400))
         self.warn.title('ERRORS ENCOUNTERED')
 
@@ -84,7 +88,7 @@ class ParamVal():
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠓⠯⣧⣎⠳⣬⢓⡬⡱⢎⡵⣋⡬⣛⠴⣋⠶⡱⢎⡞⡬⢳⡍⣞⣦⠷⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢈⡙⠓⠻⠶⠽⢮⣶⣥⣷⣭⣾⣥⣯⡵⠯⠼⠗⠛⠋⣉⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀"""
 
-        tk.Label(self.warn, text=header_text, justify=tk.LEFT).pack(ipadx=0, ipady=25)
+        tk.Label(self.warn, text=header_text, font=("Arial", 6), justify=tk.LEFT).pack(ipadx=0, ipady=25)
         tk.Label(self.warn, text="The GUI has stopped because of the following errors:", foreground='red').pack(ipadx=0, ipady=10)
 
         for i, error in enumerate(messages):

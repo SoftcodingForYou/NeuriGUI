@@ -54,7 +54,11 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
 
         self.setWindowTitle('Helment EEG GUI (raw data available at {}:{})'.format(sampl.udp_ip, sampl.udp_port))
+        
+        # This following line causes and X11 error on GNU/Linux (tried with
+        # various distributions)
         # self.setWindowIcon(QtGui.QIcon(pm.img_helment))
+        
         self.central_widget = QtWidgets.QWidget() # A QWidget to work as Central Widget
 
         # Without specifying, this just makes the GUI separable vertically

@@ -1,4 +1,5 @@
 import tkinter                              as tk
+from PIL                                    import Image, ImageTk
 from sys                                    import platform
 from github                                 import Github
 import serial.tools.list_ports
@@ -24,8 +25,8 @@ class Parameters:
         self.all_set        = False
         
         #GUI settings
+        self.githubauth     = "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"
         self.version        = '2.1'
-        self.img_helment    = './frontend/Isotipo-Helment-color.png'
         self.ico_helment    = './frontend/Isotipo-Helment-color.ico'
         if os.path.exists('./frontend/darkmode.txt'):
             with open('./frontend/darkmode.txt') as f:
@@ -84,9 +85,9 @@ class Parameters:
     def build_frontend(self):
 
         self.framePadX          = 20
-        self.framePadY          = 10
+        self.framePadY          = 5
         self.widgetPadX         = 10
-        self.widgetPadY         = 5
+        self.widgetPadY         = 2
         
         # Build GUI
         # -----------------------------------------------------------------
@@ -103,8 +104,11 @@ class Parameters:
             customtkinter.set_appearance_mode("light")
         customtkinter.set_default_color_theme("blue")
 
-        self.paramWin.title('Settings (close when ready)')
-        self.paramWin.iconbitmap(self.ico_helment)
+        # Decorations
+        self.paramWin.title('Neuri GUI: Settings')
+        photo = ImageTk.PhotoImage(Image.open(self.ico_helment))
+        self.paramWin.wm_iconphoto(True, photo)
+        
 
         # Add options
         self.display_version(self.paramWin)
@@ -116,6 +120,7 @@ class Parameters:
         self.display_channels(self.add_frame_ext_x())
         self.display_output_name(self.add_frame_ext_x())
         self.display_speed_up(self.add_frame_ext_x())
+        self.display_validate(self.paramWin)
         
         # Set GUI interaction behavior
         self.paramWin.lift()
@@ -141,7 +146,7 @@ class Parameters:
             master=master, bg_color="transparent", fg_color="transparent")
         frameVersion.pack(pady=0, padx=self.framePadX, fill=tk.X, expand=True, side=tk.TOP)
 
-        rawtoken = "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"
+        rawtoken = self.githubauth
         repository = "Helment/DataFlow"
 
         token = os.getenv('GITHUB_TOKEN', rawtoken)
@@ -479,8 +484,27 @@ class Parameters:
 
         self.s_down = int(event)
         print('Downsampling intensity set to {}'.format(self.s_down))
+
+
+    def display_validate(self, master):
+
+        customtkinter.CTkButton(master,
+            text="Register configuration",
+            border_width=2,
+            border_color="#3B8ED0",
+            text_color="#3B8ED0",
+            fg_color="white",
+            hover_color= "#144870",
+            command=self.on_validating).pack(pady=self.framePadY)
+
+
+    def on_validating(self):
         
+        print("Parameters set")
+        self.paramWin.destroy()
+
 
     def on_closing(self):
 
-        self.paramWin.destroy()
+        print("Chose to quit program")
+        quit()

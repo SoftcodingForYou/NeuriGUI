@@ -23,7 +23,9 @@ class Parameters:
         self.all_set        = False
         
         #GUI settings
+        self.version        = '2.1.0'
         self.img_helment    = './frontend/Isotipo-Helment-color.png'
+        self.ico_helment    = './frontend/Isotipo-Helment-color.ico'
         if os.path.exists('./frontend/darkmode.txt'):
             with open('./frontend/darkmode.txt') as f:
                 themeline   = f.read()
@@ -101,8 +103,10 @@ class Parameters:
         customtkinter.set_default_color_theme("blue")
 
         self.paramWin.title('Settings (close when ready)')
+        self.paramWin.iconbitmap(self.ico_helment)
 
         # Add options
+        self.display_version()
         self.display_ports(self.add_frame_ext_x())
         self.display_protocol(self.add_frame_ext_x())
         self.display_gains(self.add_frame_ext_x())
@@ -128,6 +132,17 @@ class Parameters:
         frameMain               = customtkinter.CTkFrame(master=self.paramWin)
         frameMain.pack(pady=self.framePadY, padx=self.framePadX, fill="both", expand=True)
         return frameMain
+    
+
+    def display_version(self):
+
+        frameVersion             = customtkinter.CTkFrame(
+            master=self.paramWin, bg_color="transparent", fg_color="transparent")
+        frameVersion.pack(pady=0, padx=self.framePadX, fill=tk.X, expand=True, side=tk.TOP)
+        customtkinter.CTkLabel(master=frameVersion, 
+            justify=customtkinter.RIGHT,
+            text="".join(["GUI version: ", self.version])).pack(
+                pady=0, padx=0, fill=tk.BOTH, expand=False, side=tk.RIGHT)
         
     
     def get_screen_info(self):

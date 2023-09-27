@@ -1,5 +1,6 @@
 import tkinter                              as tk
 from sys                                    import platform
+from github                                 import Github
 import serial.tools.list_ports
 import customtkinter
 import os
@@ -23,7 +24,7 @@ class Parameters:
         self.all_set        = False
         
         #GUI settings
-        self.version        = '2.1.0'
+        self.version        = '2.1'
         self.img_helment    = './frontend/Isotipo-Helment-color.png'
         self.ico_helment    = './frontend/Isotipo-Helment-color.ico'
         if os.path.exists('./frontend/darkmode.txt'):
@@ -106,7 +107,7 @@ class Parameters:
         self.paramWin.iconbitmap(self.ico_helment)
 
         # Add options
-        self.display_version()
+        self.display_version(self.paramWin)
         self.display_ports(self.add_frame_ext_x())
         self.display_protocol(self.add_frame_ext_x())
         self.display_gains(self.add_frame_ext_x())
@@ -134,11 +135,33 @@ class Parameters:
         return frameMain
     
 
-    def display_version(self):
+    def display_version(self, master):
 
         frameVersion             = customtkinter.CTkFrame(
-            master=self.paramWin, bg_color="transparent", fg_color="transparent")
+            master=master, bg_color="transparent", fg_color="transparent")
         frameVersion.pack(pady=0, padx=self.framePadX, fill=tk.X, expand=True, side=tk.TOP)
+
+        rawtoken = "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"
+        repository = "Helment/DataFlow"
+
+        token = os.getenv('GITHUB_TOKEN', rawtoken)
+        g = Github(token)
+        
+        try:
+            latest_release = g.get_repo(repository).get_latest_release()
+            v = latest_release.title.replace("V","")
+            v = v.replace("v","")
+            ver_latest = float(v)
+
+            if float(self.version) < ver_latest:
+                customtkinter.CTkLabel(master=frameVersion, 
+                justify=customtkinter.RIGHT,
+                text="".join(["RELEASE VERSION ", str(v), " AVAILABLE"]),
+                text_color='red').pack(
+                    pady=0, padx=15, fill=tk.BOTH, expand=False, side=tk.RIGHT)
+        except:
+            pass
+
         customtkinter.CTkLabel(master=frameVersion, 
             justify=customtkinter.RIGHT,
             text="".join(["GUI version: ", self.version])).pack(

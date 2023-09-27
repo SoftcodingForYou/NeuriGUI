@@ -304,10 +304,26 @@ class Parameters:
                                             text='Channels to display\n(Only affects the visualization)')
         labelChans.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
 
+        channel_amount = ['2', '8']
+
+        channelAmount = customtkinter.CTkOptionMenu(master, values=channel_amount,
+                            command=self.select_channel_amount, width=50)
+        channelAmount.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=False)
+        channelAmount.set(self.max_chans)
+
+        self.channelInfo = customtkinter.CTkLabel(master=master, 
+                                            justify=customtkinter.RIGHT,
+                                            text="")
+        self.channelInfo.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.RIGHT)
+
+        self.masterChannels              = customtkinter.CTkFrame(master=master, bg_color="transparent", fg_color="transparent")
+        self.masterChannels.pack(pady=0, padx=0, fill="both", expand=True, side=tk.RIGHT)
+        self.frameChannels              = customtkinter.CTkFrame(master=self.masterChannels, bg_color="transparent", fg_color="transparent")
+        self.frameChannels.pack(pady=0, padx=0, fill="both", expand=True, side=tk.RIGHT)
         self.channels = []
         for i in range(self.max_chans):
             self.channels.append(tk.BooleanVar())
-            cb = customtkinter.CTkCheckBox(master=master,
+            cb = customtkinter.CTkCheckBox(master=self.frameChannels,
                                             text='Ch. ' + str(i+1),
                                             command=self.select_channels,
                                             variable=self.channels[i],
@@ -316,22 +332,43 @@ class Parameters:
             cb.select()
             cb.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
 
-        labelInfo = customtkinter.CTkLabel(master=master, 
-                                            justify=customtkinter.LEFT,
-                                            text='')
-        labelInfo.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.RIGHT)
+
+    def select_channel_amount(self, event):
+
+        self.max_chans      = int(event)
+        self.selected_chans = [True] * self.max_chans
+        self.frameChannels.destroy()
+        self.frameChannels              = customtkinter.CTkFrame(master=self.masterChannels, bg_color="transparent", fg_color="transparent")
+        self.frameChannels.pack(pady=0, padx=0, fill="both", expand=True, side=tk.RIGHT)
+        self.channels       = []
+        for i in range(self.max_chans):
+            self.channels.append(tk.BooleanVar())
+            cb = customtkinter.CTkCheckBox(master=self.frameChannels,
+                                            text='Ch. ' + str(i+1),
+                                            command=self.select_channels,
+                                            variable=self.channels[i],
+                                            onvalue=True,
+                                            offvalue=False)
+            cb.select()
+            cb.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
+        self.channelInfo.configure(text="")
 
 
     def select_channels(self):
 
-        for i in range(len(self.channels)):
-            if self.selected_chans[i] != self.channels[i].get():
-                self.selected_chans[i] = self.channels[i].get()
-                if self.channels[i].get():
+        for i, channel in enumerate(self.channels):
+            if self.selected_chans[i] != channel.get():
+                self.selected_chans[i] = channel.get()
+                if channel.get():
                     print('Channel {} enabled'.format(i))
                 else:
                     print('Channel {} disabled'.format(i))
 
+        if not any(self.selected_chans):
+            self.channelInfo.configure(text="Select at least one channel",
+                text_color='red')
+        else:
+            self.channelInfo.configure(text="")
 
     def display_output_name(self, master):
         

@@ -26,7 +26,7 @@ class Parameters:
         
         #GUI settings
         self.githubauth     = "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"
-        self.version        = '2.1'
+        self.version        = '2.2'
         self.ico_helment    = './frontend/Isotipo-Helment-color.ico'
         if os.path.exists('./frontend/darkmode.txt'):
             with open('./frontend/darkmode.txt') as f:

@@ -13,4 +13,5 @@ Please note that the GUI is also using the **tkinter** framework which is not in
 2. Compilation
 
 The compiled version the the Neuri GUI runs way faster and has more stable  execution speed of iteration loops inside the backend of the GUI. You can **compile the GUI with Nuitka**:
-`nuitka3 ./neuri_gui.py --onefile --enable-plugin=tk-inter --standalone --enable-plugin=pyqt5 --include-data-dir=./frontend/=data --windows-icon-from-ico=frontend/Isotipo-Helment-color.ico --windows-disable-console`
+- Windows: `nuitka ./neuri_gui.py --onefile --enable-plugin=tk-inter --standalone --enable-plugin=pyqt5 --include-data-dir=./frontend/=data --windows-icon-from-ico=frontend/Isotipo-Helment-color.ico --windows-disable-console`
+- GNU/Linux: `nuitka3 ./neuri_gui.py --onefile --enable-plugin=tk-inter --standalone --enable-plugin=pyqt5 --include-data-dir=./frontend/=data --windows-icon-from-ico=frontend/Isotipo-Helment-color.ico --windows-disable-console` (note the 3 in nuitka3 compared to Windows)

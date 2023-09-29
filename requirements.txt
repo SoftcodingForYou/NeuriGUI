@@ -1,0 +1,12 @@
+customtkinter==5.2.0
+dbus-python==1.2.18
+Nuitka==1.8.2
+numpy==1.25.2
+oauthlib==3.2.0
+Pillow==9.0.1
+PyGithub==1.59.1
+PyQt5==5.15.6
+pyqtgraph==0.13.3
+pyserial==3.5
+requests==2.31.0
+scipy==1.11.2

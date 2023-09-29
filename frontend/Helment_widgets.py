@@ -3,6 +3,7 @@ from PyQt5                                  import QtCore, QtWidgets, QtGui
 from pyqtgraph                              import PlotWidget
 import pyqtgraph                            as pg
 import numpy                                as np
+import os
 
 
 class GUIWidgets():
@@ -451,17 +452,43 @@ class GUIWidgets():
         if self.darkmode:
             self.themebtn.setText('Light')
             self.apply_light_theme()
-            with open('./frontend/darkmode.txt', 'w') as file:
-                file.write('Darkmode=0')
             self.darkmode = False
+            self.save_parameters()
             print('Enabled light theme')
         elif not self.darkmode:
             self.themebtn.setText('Dark')
             self.apply_dark_theme()
-            with open('./frontend/darkmode.txt', 'w') as file:
-                file.write('Darkmode=1')
             self.darkmode = True
+            self.save_parameters()
             print('Enabled dark theme')
+
+
+    def save_parameters(self):
+
+        end_line        = "\n"
+        conf_file       = './settings.cfg'
+
+        if not os.path.exists(conf_file): # File generation
+
+            with open(conf_file, 'w') as f:
+                f.write("".join(["Darkmode=", str(self.darkmode), end_line]))
+
+        else:
+
+            with open(conf_file, 'r') as f:
+            
+                settings                        = f.readlines()
+                
+                for i, setting in enumerate(settings): # Update values
+                    if 'Darkmode' in setting:
+                        settings[i]             = "".join(["Darkmode=", str(self.darkmode), end_line])
+
+                new_settings = []
+                if len([s for s in settings if "Darkmode" in s]) == 0:
+                    new_settings.append("".join(["Darkmode=", str(self.darkmode), end_line]))
+
+            with open(conf_file, 'w') as f:
+                f.write("".join(settings + new_settings))
 
 
     def define_darktheme(self):

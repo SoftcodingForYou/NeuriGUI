@@ -12,12 +12,132 @@ class Parameters:
 
         super(Parameters, self).__init__()
 
-        self.set_defaults()
+        self.conf_file      = './settings.cfg'
+
+        self.set_defaults() # Necessary to execute first in case user 
+                            # parameter not found in configuration file
+        # Loop up user settings
+        self.load_parameters()
+
         self.get_screen_info()
         self.build_frontend()
 
         # This stops code execution until paramWin closed
         self.paramWin.mainloop()
+
+
+    def load_parameters(self):
+
+        if not os.path.exists(self.conf_file):
+            return
+        
+        with open(self.conf_file, 'r') as f:
+            
+            settings                        = f.readlines()
+            
+            for i, setting in enumerate(settings):
+                if 'Darkmode' in setting and 'True' in setting:
+                    self.darkmode           = True
+                elif 'Darkmode' in setting and 'False' in setting:
+                    self.darkmode           = False
+                elif 'SamplingRate' in setting:
+                    try:
+                        self.sample_rate    = int(setting[setting.find('=')+1:])
+                    except:
+                        pass
+                elif 'AmountChannels' in setting:
+                    try:
+                        self.max_chans      = int(setting[setting.find('=')+1:])
+                    except:
+                        pass
+                elif 'TimeRange' in setting:
+                    try:
+                        self.buffer_length  = int(setting[setting.find('=')+1:])
+                    except:
+                        pass
+                elif 'PGA' in setting:
+                    try:
+                        self.PGA            = int(setting[setting.find('=')+1:])
+                    except:
+                        pass
+                elif 'Port' in setting:
+                    try:
+                        self.port           = str(setting[setting.find('=')+1:])
+                        if '\n' in self.port:
+                            self.port = self.port.replace('\n', '')
+                    except:
+                        pass
+                elif 'DownsamplingFactor' in setting:
+                    try:
+                        self.s_down         = int(setting[setting.find('=')+1:])
+                    except:
+                        pass
+
+        print("Loaded user-defined settings")
+
+        # Missing: self.selected_chans
+
+
+    def save_parameters(self):
+
+        end_line = "\n"
+
+        if not os.path.exists(self.conf_file): # File generation
+
+            with open(self.conf_file, 'w') as f:
+
+                settings = [
+                    "".join(["Darkmode=", str(self.darkmode), end_line]),
+                    "".join(["SamplingRate=", str(self.sample_rate), end_line]),
+                    "".join(["AmountChannels=", str(self.max_chans), end_line]),
+                    "".join(["TimeRange=", str(self.buffer_length), end_line]),
+                    "".join(["PGA=", str(self.PGA), end_line]),
+                    "".join(["Port=", str(self.port), end_line]),
+                    "".join(["DownsamplingFactor=", str(self.s_down), end_line])
+                    ]
+
+                f.write("".join(settings))
+
+        else:
+
+            with open(self.conf_file, 'r') as f:
+            
+                settings                        = f.readlines()
+                
+                for i, setting in enumerate(settings): # Update values
+                    if 'Darkmode' in setting:
+                        settings[i]             = "".join(["Darkmode=", str(self.darkmode), end_line])
+                    elif 'SamplingRate' in setting:
+                        settings[i]             = "".join(["SamplingRate=", str(self.sample_rate), end_line])
+                    elif 'AmountChannels' in setting:
+                        settings[i]             = "".join(["AmountChannels=", str(self.max_chans), end_line])
+                    elif 'TimeRange' in setting:
+                        settings[i]             = "".join(["TimeRange=", str(self.buffer_length), end_line])
+                    elif 'PGA' in setting:
+                        settings[i]             = "".join(["PGA=", str(self.PGA), end_line])
+                    elif 'Port' in setting:
+                        settings[i]             = "".join(["Port=", str(self.port), end_line])
+                    elif 'DownsamplingFactor' in setting:
+                        settings[i]             = "".join(["DownsamplingFactor=", str(self.s_down), end_line])
+
+                new_settings = []
+                if len([s for s in settings if "Darkmode" in s]) == 0:
+                    new_settings.append("".join(["Darkmode=", str(self.darkmode), end_line]))
+                if len([s for s in settings if "SamplingRate" in s]) == 0:
+                    new_settings.append("".join(["SamplingRate=", str(self.sample_rate), end_line]))
+                if len([s for s in settings if "AmountChannels" in s]) == 0:
+                    new_settings.append("".join(["AmountChannels=", str(self.max_chans), end_line]))
+                if len([s for s in settings if "TimeRange" in s]) == 0:
+                    new_settings.append("".join(["TimeRange=", str(self.buffer_length), end_line]))
+                if len([s for s in settings if "PGA" in s]) == 0:
+                    new_settings.append("".join(["PGA=", str(self.PGA), end_line]))
+                if len([s for s in settings if "Port" in s]) == 0:
+                    new_settings.append("".join(["Port=", str(self.port), end_line]))
+                if len([s for s in settings if "DownsamplingFactor" in s]) == 0:
+                    new_settings.append("".join(["DownsamplingFactor=", str(self.s_down), end_line]))
+
+            with open(self.conf_file, 'w') as f:
+                f.write("".join(settings + new_settings))
 
 
     def set_defaults(self):
@@ -28,15 +148,7 @@ class Parameters:
         self.githubauth     = "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"
         self.version        = '2.2'
         self.ico_helment    = './frontend/Isotipo-Helment-color.ico'
-        if os.path.exists('./frontend/darkmode.txt'):
-            with open('./frontend/darkmode.txt') as f:
-                themeline   = f.read()
-                if themeline == 'Darkmode=1':
-                    self.darkmode = True
-                else:
-                    self.darkmode = False
-        else:
-            self.darkmode = False
+        self.darkmode       = False
 
         #Session-specific parameters
         self.yrange         = [-0, 0] # List of scalars ([negative, positive]) in order to set figure y axis range
@@ -187,9 +299,12 @@ class Parameters:
         ports = [port.device for port in list(serial.tools.list_ports.comports())]
         if len(ports) == 0:
             defaultPort = 'No port available'
-        else: 
-            defaultPort = ports[0]
-            self.port   = defaultPort # If no change, select_port does not get triggered
+        else:
+            if self.port == '': 
+                defaultPort = ports[0]
+                self.port   = defaultPort # If no change, select_port does not get triggered
+            else:
+                defaultPort = self.port
 
         labelPort = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,
@@ -373,7 +488,7 @@ class Parameters:
                                             onvalue=True,
                                             offvalue=False)
             cb.select()
-            cb.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
+            cb.pack(pady=self.widgetPadY, padx=0, side=tk.LEFT, expand=True)
 
 
     def select_channel_amount(self, event):
@@ -412,6 +527,7 @@ class Parameters:
                 text_color='red')
         else:
             self.channelInfo.configure(text="")
+
 
     def display_output_name(self, master):
         
@@ -488,20 +604,47 @@ class Parameters:
 
     def display_validate(self, master):
 
+        customtkinter.CTkFrame(master, height=1, bg_color='transparent').pack(side=tk.LEFT, fill=tk.X)
+        customtkinter.CTkFrame(master, height=1, bg_color='transparent').pack(side=tk.RIGHT, fill=tk.X)
+
         customtkinter.CTkButton(master,
-            text="Register configuration",
+            text="Save & Start",
             border_width=2,
             border_color="#3B8ED0",
             text_color="#3B8ED0",
             fg_color="white",
-            hover_color= "#144870",
-            command=self.on_validating).pack(pady=self.framePadY)
+            hover_color= "#B8C8D4",
+            command=self.on_validating).pack(
+                pady=self.framePadY, padx=self.framePadX, side=tk.LEFT)
+        
+        customtkinter.CTkButton(master,
+            text="Reset & Quit",
+            border_width=2,
+            border_color="#c54040",
+            text_color="#c54040",
+            fg_color="white",
+            hover_color= "#EDC5C5",
+            command=self.on_reset).pack(
+                pady=self.framePadY, padx=self.framePadX, side=tk.RIGHT)
 
 
     def on_validating(self):
         
         print("Parameters set")
+        self.save_parameters()
+        print("".join(["Parameters stored in ", self.conf_file]))
         self.paramWin.destroy()
+        print("Starting GUI now...")
+
+
+    def on_reset(self):
+        
+        self.set_defaults()
+        print("Parameters have been reset")
+        self.save_parameters()
+        print("".join(["Settings in ", self.conf_file, "have been reset"]))
+        print("Please start the GUI again")
+        quit()
 
 
     def on_closing(self):

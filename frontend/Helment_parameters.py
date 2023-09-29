@@ -146,7 +146,7 @@ class Parameters:
         
         #GUI settings
         self.githubauth     = "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"
-        self.version        = '2.2'
+        self.version        = '2.3'
         self.ico_helment    = './frontend/Isotipo-Helment-color.ico'
         self.darkmode       = False
 

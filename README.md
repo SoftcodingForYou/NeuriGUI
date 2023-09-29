@@ -1,11 +1,16 @@
 # Neuri GUI
 
+Neuri is an EEG board developed by Helment. This GUI is working with Neuri versions 1.x and 2.x. The GUI has the following features:
+1. Set multiple parameters for real-time signal visualization
+2. Forward the signal (raw) in to a serial port located at 127.0.0.1:XYZ. This allows you to connect any of your applications to the GUI and to work with the acquired signal in real-time.
+3. Store the data in an open text format for offline analysis.
+
 1. Setup
 
 The GUI is distributed as a Python program. The GUI should work with **Python versions 3.10 or higher**.
 
 You can set up the environment (Python **libraries**) by running:
-`pip install - requirements.txt`
+`pip install -r requirements.txt`
 
 Please note that the GUI is also using the **tkinter** framework which is not installable via `pip`. You have to install this during installation of the Python language. On GNU/Linux-based systems, it can be installed via the package manager (apt for Ubuntu):
 `apt-get install python3-tk`

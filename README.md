@@ -17,9 +17,10 @@ Please note that the GUI is also using the **tkinter** framework which is not in
 
 ### GNU/Linux
 
-Qnother Linux specific steps are:
+Other Linux specific steps are:
 - Python Image Library (PIL): `apt install python3-pil.imagetk`
 - PyQt dependencies for X server: `sudo apt install libgl1-mesa-dev libxcb*-dev libfontconfig1-dev libxkbcommon-x11-dev libgtk-3-dev`
+- Nuitka compilations: `sudo apt install patchelf`
 
 ## Compilation
 

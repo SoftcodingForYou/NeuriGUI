@@ -13,7 +13,13 @@ You can set up the environment (Python **libraries**) by running:
 `pip install -r requirements.txt`
 
 Please note that the GUI is also using the **tkinter** framework which is not installable via `pip`. You have to install this during installation of the Python language. On GNU/Linux-based systems, it can be installed via the package manager (apt for Ubuntu):
-`apt-get install python3-tk`
+`apt install python3-tk`
+
+### GNU/Linux
+
+Qnother Linux specific steps are:
+- Python Image Library (PIL): `apt install python3-pil.imagetk`
+- PyQt dependencies for X server: `sudo apt install libgl1-mesa-dev libxcb*-dev libfontconfig1-dev libxkbcommon-x11-dev libgtk-3-dev`
 
 ## Compilation
 

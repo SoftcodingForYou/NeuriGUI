@@ -1,5 +1,5 @@
-import scipy.signal
-import numpy                        as np
+from scipy.signal import butter, lfilter_zi, lfilter, hilbert
+from numpy import zeros, pad, abs
 
 
 class Processing():
@@ -14,22 +14,22 @@ class Processing():
 
         # Bandpass filters
         # -----------------------------------------------------------------
-        self.b_detrend, self.a_detrend          = scipy.signal.butter(
+        self.b_detrend, self.a_detrend          = butter(
             self.pm.filter_order, self.pm.frequency_bands["Whole"][0],
             btype='highpass', fs=self.pm.sample_rate)
-        self.b_wholerange, self.a_wholerange    = scipy.signal.butter(
+        self.b_wholerange, self.a_wholerange    = butter(
             self.pm.filter_order, self.pm.frequency_bands["Whole"],
             btype='bandpass', fs=self.pm.sample_rate)
-        self.b_sleep, self.a_sleep              = scipy.signal.butter(
+        self.b_sleep, self.a_sleep              = butter(
             self.pm.filter_order, self.pm.frequency_bands["Sleep"],
             btype='bandpass', fs=self.pm.sample_rate)
-        self.b_theta, self.a_theta              = scipy.signal.butter(
+        self.b_theta, self.a_theta              = butter(
             self.pm.filter_order, self.pm.frequency_bands["Theta"],
             btype='bandpass', fs=self.pm.sample_rate)
-        self.b_notch, self.a_notch              = scipy.signal.butter(
+        self.b_notch, self.a_notch              = butter(
             self.pm.filter_order, self.pm.frequency_bands["LineNoise"],
             btype='bandstop', fs=self.pm.sample_rate)
-        self.b_notch60, self.a_notch60          = scipy.signal.butter(
+        self.b_notch60, self.a_notch60          = butter(
             self.pm.filter_order, self.pm.frequency_bands["LineNoise60"],
             btype='bandstop', fs=self.pm.sample_rate)
 
@@ -51,21 +51,21 @@ class Processing():
         #   signal_filtered[0]  1D numpy array of filtered signal where 
         #                       first sample is 0
         # =================================================================
-        padded_signal   = np.pad(signal, (self.padlen, 0), 'symmetric')
-        init_state      = scipy.signal.lfilter_zi(b, a) # 1st sample --> 0
-        signal_filtered = scipy.signal.lfilter(b, a, padded_signal, 
+        padded_signal   = pad(signal, (self.padlen, 0), 'symmetric')
+        init_state      = lfilter_zi(b, a) # 1st sample --> 0
+        signal_filtered = lfilter(b, a, padded_signal, 
             zi=init_state*padded_signal[0])
         signal_filtered = signal_filtered[0][self.padlen:]
         return signal_filtered
 
 
     def extract_envelope(self, signal):
-        hilbert         = signal
+        v_hilbert       = signal
         for iChan in range(signal.shape[0]):
             # padded_signal   = np.pad(signal[iChan,], (self.padlen, self.padlen), 'symmetric')
             # hilbert[iChan,] = np.abs(scipy.signal.hilbert(padded_signal))[self.padlen:-self.padlen]
-            hilbert[iChan,] = np.abs(scipy.signal.hilbert(signal[iChan,]))
-        return hilbert
+            v_hilbert[iChan,] = abs(hilbert(signal[iChan,]))
+        return v_hilbert
 
 
     def downsample(self, buffer, s_down):
@@ -77,7 +77,7 @@ class Processing():
         #                       dimensions as input buffer
         # =================================================================
 
-        downsampled_signal  = np.zeros((buffer.shape[0], int(buffer.shape[1]/s_down)))
+        downsampled_signal  = zeros((buffer.shape[0], int(buffer.shape[1]/s_down)))
         idx_retain = range(0, buffer.shape[1], s_down)
         for iChan in range(self.pm.max_chans):
             # downsampled_signal[iChan,] = scipy.signal.decimate(buffer[iChan,], s_down)
@@ -98,9 +98,11 @@ class Processing():
         #   filtered_buffer     Numpy array of filtered signal, same  
         #                       dimensions as input buffer
         # =================================================================
-        noise_free_signal   = np.zeros(buffer.shape)
-        filtered_buffer     = np.zeros(buffer.shape)
-        for iChan in range(self.pm.max_chans):
+        x_shape             = buffer.shape
+
+        noise_free_signal   = zeros(x_shape)
+        filtered_buffer     = zeros(x_shape)
+        for iChan in range(x_shape[0]):
 
             # Reject ambiant electrical noise (at 50 Hz)
             # -------------------------------------------------------------

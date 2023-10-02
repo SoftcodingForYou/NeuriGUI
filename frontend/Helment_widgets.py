@@ -2,7 +2,7 @@
 from PyQt5                                  import QtCore, QtWidgets, QtGui
 from pyqtgraph                              import PlotWidget
 import pyqtgraph                            as pg
-import numpy                                as np
+from numpy import max, abs, array, zeros, reshape
 import os
 
 
@@ -16,12 +16,7 @@ class GUIWidgets():
         # -----------------------------------------------------------------
         self.displ_chans    = [i for i in range(parameter.max_chans) if parameter.selected_chans[i]]
         self.numchans       = len(self.displ_chans)
-        self.numsamples     = int(parameter.sample_rate * parameter.buffer_length)
-        self.left_edge      = int(parameter.sample_rate * parameter.buffer_add)
-        self.samplerate     = parameter.sample_rate
         self.count          = 0
-        self.s_down         = parameter.s_down
-        self.idx_retain     = range(0, int(parameter.sample_rate * parameter.buffer_length), parameter.s_down)
         self.yrange         = parameter.yrange
         self.notch          = parameter.notch
         self.bpass          = parameter.bpass
@@ -41,16 +36,6 @@ class GUIWidgets():
         self.mainwindow     = mainwindow
 
         self.proc           = processing
-
-        # if os.path.exists('./frontend/darkmode.txt'):
-        #     with open('./frontend/darkmode.txt') as f:
-        #         themeline   = f.read()
-        #         if themeline == 'Darkmode=1':
-        #             self.darkmode = True
-        #         else:
-        #             self.darkmode = False
-        # else:
-        #     self.darkmode = False
 
 
     def initiate_theme(self):
@@ -249,26 +234,26 @@ class GUIWidgets():
         return self.theme
     
 
-    def fg_signal_stream(self):
+    def fg_signal_stream(self, num_samples, s_down, displ_chans, sampling_rate):
         self.signal         = QtWidgets.QWidget()
         vertlayout          = QtWidgets.QVBoxLayout()
 
-        self.x              = list(range(-self.numsamples, 0, self.s_down))
-        self.x              = [x/self.samplerate for x in self.x]
-        self.xplot          = np.array(self.x) # Non-sense action to avoid pointers (force creation of other id())
-        self.y              = np.zeros((self.numchans, int(self.numsamples/self.s_down)), dtype=float)
+        self.x              = list(range(-num_samples, 0, s_down))
+        self.x              = [x/sampling_rate for x in self.x]
+        self.xplot          = array(self.x) # Non-sense action to avoid pointers (force creation of other id())
+        self.y              = zeros((len(displ_chans), int(num_samples/s_down)), dtype=float)
         self.data_line      = {}
         self.signalgraph    = {}
         self.penstyle       = {}
 
-        for iChan in range(self.numchans):
+        for iChan in range(len(displ_chans)):
 
             self.signalgraph[iChan] = PlotWidget()
 
             # Aesthetics
             self.signalgraph[iChan].setBackground('w')
             self.signalgraph[iChan].setLabel('left', 'A (uV)')
-            if iChan == self.numchans -1:
+            if iChan == len(displ_chans) -1:
                 self.signalgraph[iChan].setLabel('bottom', '')
             else:
                 self.signalgraph[iChan].setLabel('bottom', '')
@@ -290,7 +275,7 @@ class GUIWidgets():
             # Set signal lines
             self.data_line[iChan] = self.signalgraph[iChan].plot(
                 self.xplot, self.y[iChan,:],
-                name='Ch. {}'.format(str(self.displ_chans[iChan]+1)),
+                name='Ch. {}'.format(str(displ_chans[iChan]+1)),
                 pen=self.penstyle[iChan])
 
             # Disable interactivity
@@ -312,53 +297,52 @@ class GUIWidgets():
         return self.signal
 
 
-    def update_signal_plot(self, recv_conn):
+    def update_signal_plot(self, recv_conn, s_down, left_edge,
+                           sampling_rate, idx_retain, displ_chans):
 
         # Update plots for every channel
         # -----------------------------------------------------------------
         buffer, t_now   = recv_conn.recv()
 
         self.count = self.count + 1
-        if self.count < self.s_down:
+        if self.count < s_down:
             return
 
         # Filter buffer signal and send filtered data to plotting funcs
         # -------------------------------------------------------------
         processed_buffer    = self.prepare_buffer(buffer, 
             self.bSB, self.aSB, self.bPB, self.aPB)
-        processed_buffer    = processed_buffer[:, self.left_edge:]
+        processed_buffer    = processed_buffer[:, left_edge:]
 
         if self.envelope == True:
             processed_buffer = self.extract_envelope(processed_buffer)
 
         self.x          = self.x[1:]  # Remove the first y element
-        self.x.append(self.x[-1]+self.count/self.samplerate) # t_now/1000
+        self.x.append(self.x[-1]+self.count/sampling_rate) # t_now/1000
 
         if self.streaming == True:
             self.xplot      = self.x
 
         
         # Downsample buffer
-        down_buffer = processed_buffer[:, self.idx_retain]
+        down_buffer = processed_buffer[:, idx_retain]
 
         # Set vertical range
-        v_buffer    = np.reshape(down_buffer, down_buffer.size)
+        v_buffer    = reshape(down_buffer, down_buffer.size)
         if self.yrange[1] == 0:
-            vscale = [-np.max(
-                [np.abs(np.min(v_buffer)), np.abs(np.max(v_buffer))]
-                ), np.max(
-                [np.abs(np.min(v_buffer)), np.abs(np.max(v_buffer))]
-                )]
+            vscale = [
+                -max([abs(min(v_buffer)), abs(max(v_buffer))]),
+                max([abs(min(v_buffer)), abs(max(v_buffer))])]
         else:
             vscale = self.yrange
         
 
         # Update plots for every channel
         # -------------------------------------------------------------
-        for iChan in range(self.numchans):
+        for iChan in range(len(displ_chans)):
 
             if self.streaming == True:
-                self.y[iChan,:] = down_buffer[self.displ_chans[iChan], :]
+                self.y[iChan,:] = down_buffer[displ_chans[iChan], :]
             
             self.data_line[iChan].setData(self.x, self.y[iChan])  # Update the data
 
@@ -382,16 +366,16 @@ class GUIWidgets():
             self.aSB    = self.proc.a_notch60
         elif choice == 0:
             print('Notch filter disabled')
-            self.bSB    = np.array([None, None]) # Avoiding bool not iterable
-            self.aSB    = np.array([None, None])
+            self.bSB    = array([None, None]) # Avoiding bool not iterable
+            self.aSB    = array([None, None])
 
 
     def filt_bandpass(self, choice):
         choice = int(choice)
         if choice == -1:
             print('Displaying raw signal')
-            self.bPB        = np.array([None, None])
-            self.aPB        = np.array([None, None])
+            self.bPB        = array([None, None])
+            self.aPB        = array([None, None])
         elif choice == 0:
             print('Highpass filter from 0.1 Hz')
             self.bPB        = self.proc.b_detrend

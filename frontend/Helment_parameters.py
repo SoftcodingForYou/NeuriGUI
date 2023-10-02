@@ -5,6 +5,7 @@ from github                                 import Github
 import serial.tools.list_ports
 import customtkinter
 import os
+import socket
 
 class Parameters:
 
@@ -19,11 +20,39 @@ class Parameters:
         # Loop up user settings
         self.load_parameters()
 
+        # Build relay connection for other programs
+        self.build_relay(self.udp_ip)
+
         self.get_screen_info()
         self.build_frontend()
 
         # This stops code execution until paramWin closed
         self.paramWin.mainloop()
+
+
+    def build_relay(self, ip):
+        # =================================================================
+        # This connection will be used in order to transfer the incoming 
+        # signal from the board to a dynamuically defined port via UDP
+        # =================================================================
+
+        self.udp_port   = self.search_free_com(ip)
+        self.udp_ip     = ip
+        self.send_sock  = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+        print('Relay connection established at ' + self.udp_ip + ':' + str(self.udp_port))
+        print('Use this connection to import signals in your own program!\n')
+    
+
+    def search_free_com(self, ip):
+
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        for iPort in range(12344, 12350):
+            try:
+                s = s.connect((ip, iPort))
+            except:
+                return iPort
+
+        raise Exception('No available UDP port found for signal relay')
 
 
     def load_parameters(self):
@@ -146,7 +175,7 @@ class Parameters:
         
         #GUI settings
         self.githubauth     = "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"
-        self.version        = '2.3'
+        self.version        = '2.4'
         self.ico_helment    = './frontend/Isotipo-Helment-color.ico'
         self.darkmode       = False
 
@@ -163,7 +192,6 @@ class Parameters:
         self.selected_chans = [True] * self.max_chans
         self.buffer_length  = 10 #scalar (seconds)
         self.buffer_add     = 4 #scalar (seconds), we add this to the buffer for filtering to avoid edge artifacts
-        self.sample_count   = 0 #integer zero
         self.saving_interval= 1 #scalar (seconds)
         self.PGA            = 24 #scalar
 

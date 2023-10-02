@@ -1,8 +1,7 @@
-import json
-import time
-import socket
+from json import loads, dumps, decoder
+from time import sleep, perf_counter
 #import random
-import numpy                            as np
+from numpy import expand_dims, concatenate, fromiter, append, array, zeros
 from threading                          import Thread
 from datetime                           import datetime
 
@@ -19,56 +18,15 @@ class Sampling():
         else:
             file_name   = 'Helment ' + t0 + '.txt'
 
-        self.py_start   = round(time.perf_counter() * 1000, 0)
-        self.pga        = parameter.PGA
-
         # Prepare data output
         self.output_file= file_name
-        self.buffer     = np.zeros((parameter.max_chans, 
-            (parameter.buffer_length + parameter.buffer_add) * parameter.sample_rate))
-        self.time_stamps= np.zeros(parameter.buffer_length * parameter.sample_rate)
 
         with open(self.output_file, 'w', encoding= "utf_8") as file:
             file.write("Session Started\n")
             file.close() # Important for data to get written
 
-        # Sample fetching parameters
-        self.sample_count       = parameter.sample_count # From parameters
-        self.saving_interval    = parameter.saving_interval * parameter.sample_rate # From parameters
-        self.time_reset         = self.py_start
-        self.sample_rate        = parameter.sample_rate
-        self.s_chans            = parameter.max_chans
 
-        # Build relay connection for other programs
-        self.build_relay(parameter.udp_ip)
-
-
-    def build_relay(self, ip):
-        # =================================================================
-        # This connection will be used in order to transfer the incoming 
-        # signal from the board to a dynamuically defined port via UDP
-        # =================================================================
-
-        self.udp_port   = self.search_free_com(ip)
-        self.udp_ip     = ip
-        self.send_sock  = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
-        print('Relay connection established at ' + self.udp_ip + ':' + str(self.udp_port))
-        print('Use this connection to import signals in your own program!\n')
-    
-
-    def search_free_com(self, ip):
-
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        for iPort in range(12344, 12350):
-            try:
-                s = s.connect((ip, iPort))
-            except:
-                return iPort
-
-        raise Exception('No available UDP port found for signal relay')
-
-
-    def bin_to_voltage(self, s_bin):
+    def bin_to_voltage(self, s_bin, pga):
         # =================================================================
         # Convert binary into volts
         # Input
@@ -89,21 +47,21 @@ class Sampling():
         else:
             print('sign_bit not assigned, returning 0')
         
-        voltage = (4.5*sign_bit)/(self.pga*8388607.0)
+        voltage = (4.5*sign_bit)/(pga*8388607.0)
         voltage = voltage * 1000000 # Convert to microvolts
 
         #voltage = random.randrange(-200, 200)
         return voltage
     
 
-    def channel_assignment(self, str_message):
+    def channel_assignment(self, str_message, s_chans):
         # -----------------------------------------------------------------
         # Extract samples from board
         # Input
         #   str_message Raw message string coming from board
         # Default in case of faulty message
-        eeg_array       = np.expand_dims(
-            np.array([0] * self.s_chans, dtype=float), # Crucial to set float
+        eeg_array       = expand_dims(
+            array([0] * s_chans, dtype=float), # Crucial to set float
             axis=1)
         eeg_valid       = False
         #   eeg_array   Numpy array (floats), being channels by samples
@@ -115,29 +73,29 @@ class Sampling():
         
         # Build Python dictionnary
         try:
-            chanDict        = json.loads(str_message)
-        except json.decoder.JSONDecodeError:
+            chanDict        = loads(str_message)
+        except decoder.JSONDecodeError:
             # Corrupt message: not all channels present
             print("Skipped message")
             return eeg_array, eeg_valid
 
-        if len(chanDict) != self.s_chans:
+        if len(chanDict) != s_chans:
             return eeg_array, eeg_valid
         
-        eeg_array       = np.expand_dims(
-            np.fromiter(chanDict.values(), dtype=float), # Crucial to set float
+        eeg_array       = expand_dims(
+            fromiter(chanDict.values(), dtype=float), # Crucial to set float
             axis=1)
         eeg_valid       = True
         
         return eeg_array, eeg_valid
 
 
-    def fetch_sample(self, pipe_conn, ser, cons, desired_con):
+    def fetch_sample(self, pipe_conn, ser, parameter):
 
-        if desired_con == 2: # USB
+        if parameter.firmfeedback == 2: # USB
             s_per_buffer    = 1
             print('Ordered board to send data via USB. Switching mode ...')
-        elif desired_con == 3: # Bluetooth
+        elif parameter.firmfeedback == 3: # Bluetooth
             s_per_buffer    = 10
             print('Ordered board to send data via Bluetooth. Switching mode ...')
 
@@ -146,9 +104,9 @@ class Sampling():
             raise Exception('Verify that desired connection type (USB or Bluetooth) are indeed available')
         else:
             ser.open()
-            time.sleep(1)
+            sleep(1)
 
-        ser.write(bytes(str(desired_con), 'utf-8'))
+        ser.write(bytes(str(parameter.firmfeedback), 'utf-8'))
         # time.sleep(1)
 
         board_booting = True
@@ -157,18 +115,35 @@ class Sampling():
             raw_message = str(ser.readline())
             print(raw_message)
             if 'Listening ...' in raw_message:
-                ser.write(bytes(str(desired_con), 'utf-8')) # Try again
-                time.sleep(1)
+                ser.write(bytes(str(parameter.firmfeedback), 'utf-8')) # Try again
+                sleep(1)
             elif '{' in raw_message and '}' in raw_message:
                 print('Fully started')
                 board_booting = False
 
 
-        # Preallocate json relay message
+        # Prealloate values of loop ---------------------------------------
+        start_time          = int(perf_counter() * 1000)
+        time_stamp_now      = int(perf_counter() * 1000) # Do NOT copy from start_time (will generate pointer)
+        time_reset          = int(perf_counter() * 1000) # Do NOT copy from start_time (will generate pointer)
+        sample_count        = int(0)
+        
+        buffer              = zeros((parameter.max_chans, 
+            (parameter.buffer_length + parameter.buffer_add) * parameter.sample_rate))
+        time_stamps         = zeros(parameter.buffer_length * parameter.sample_rate, dtype=int)
+        pga                 = parameter.PGA
+        s_chans             = parameter.max_chans
+        sampling_rate       = parameter.sample_rate
+        saving_interval     = parameter.saving_interval * parameter.sample_rate
+        
+        # Preallocate json relay message and relay connection
         relay_array         = {}
         relay_array["t"]    = ''
-        for iC in range(self.s_chans):
+        for iC in range(s_chans):
             relay_array["".join(["c", str(iC+1)])] = ''
+        send_sock           = parameter.send_sock
+        udp_ip              = parameter.udp_ip
+        udp_port            = parameter.udp_port
 
         for _ in range(1000):
             ser.read(ser.inWaiting())
@@ -179,15 +154,14 @@ class Sampling():
             
             raw_message             = str(ser.readline())
 
-            buffer_in, valid_eeg    = self.channel_assignment(raw_message)
+            buffer_in, valid_eeg    = self.channel_assignment(raw_message, s_chans)
 
             if not valid_eeg:
                 # TO-DO: Implement an interpolation system
                 continue
 
             # Current timestamp -------------------------------------------
-            time_stamp_now          = round(
-                time.perf_counter() * 1000, 0) - self.py_start
+            time_stamp_now          = int(perf_counter() * 1000) - start_time
             # This will generate unchanged time_stamps for all samples of 
             # the incoming bufer (= 10 in case of bluetooth), but that is
             # not a problem
@@ -196,37 +170,38 @@ class Sampling():
             # (theoretically). Since parts of messages can be lost, we 
             # soft-set the amount of samples after checking for data 
             # integrity during data_checkpoint()
-            for iS in range(buffer_in.shape[1]):
+            for iS in range(s_per_buffer):
 
-                self.sample_count   = self.sample_count + 1
+                sample_count        = sample_count + 1
                 
                 sample              = buffer_in[:, iS]
 
                 # Convert binary to voltage values
-                for iBin in range(sample.size):
-                    sample[iBin]    = self.bin_to_voltage(sample[iBin])
+                for iBin in range(s_chans):
+                    sample[iBin]    = self.bin_to_voltage(sample[iBin], pga)
                     relay_array["".join(["c", str(iBin+1)])] = str(sample[iBin])
 
-                update_buffer       = np.concatenate((self.buffer, np.expand_dims(sample, 1)), axis=1)
-                update_times        = np.append(self.time_stamps, time_stamp_now)
+                update_buffer       = concatenate((buffer, expand_dims(sample, 1)), axis=1)
+                update_times        = append(time_stamps, time_stamp_now)
 
                 # Build new buffer and timestamp arrays
-                self.buffer         = update_buffer[:, 1:]
-                self.time_stamps= update_times[1:]
+                buffer              = update_buffer[:, 1:]
+                time_stamps         = update_times[1:]
 
-                self.send_sock.sendto(bytes(json.dumps(relay_array), "utf-8"), (self.udp_ip, self.udp_port))
+                send_sock.sendto(bytes(dumps(relay_array), "utf-8"), (udp_ip, udp_port))
 
-                pipe_conn.send((self.buffer, time_stamp_now))
+                pipe_conn.send((buffer, time_stamp_now))
 
                 # Write out samples to file -----------------------------------
-                if self.sample_count == self.saving_interval:
+                if sample_count == saving_interval:
 
-                    self.calc_sample_rate(time_stamp_now, self.time_reset)
+                    self.calc_sample_rate(time_stamp_now, time_reset, 
+                                          sampling_rate, time_stamps)
 
-                    self.master_write_data(self.buffer, self.time_stamps, 
-                        self.saving_interval, self.output_file)
-                    self.sample_count   = 0
-                    self.time_reset     = time_stamp_now
+                    self.master_write_data(buffer, time_stamps, 
+                        saving_interval, self.output_file)
+                    sample_count        = 0
+                    time_reset          = time_stamp_now
 
 
     def master_write_data(self, eeg_data, time_stamps, saving_interval,
@@ -248,14 +223,14 @@ class Sampling():
         save_thread.start()
 
 
-    def calc_sample_rate(self, curr_time, prev_iter_time):
+    def calc_sample_rate(self, curr_time, prev_iter_time, sample_rate, time_stamps):
 
         time_diff           = curr_time - prev_iter_time
         # It took (time_diff) ms to fetch (sample_rate) samples.
         # Calculate actual sampling rate
-        actual_sr           = round((self.sample_rate / (time_diff / 1000)), 1)
-        print('%d ms: Writing data (sampling rate = %.1f Hz)' %
-            (self.time_stamps[-1], actual_sr))
+        actual_sr           = int((sample_rate / (time_diff / 1000)))
+        print('%d ms: Writing data (sampling rate = %d Hz)' %
+            (time_stamps[-1], actual_sr))
 
 
     def write_data_thread(self, eeg_data, time_stamps, output_file):

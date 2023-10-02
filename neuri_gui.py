@@ -53,7 +53,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # -----------------------------------------------------------------
         super(MainWindow, self).__init__(*args, **kwargs)
 
-        self.setWindowTitle('Helment EEG GUI (raw data available at {}:{})'.format(sampl.udp_ip, sampl.udp_port))
+        self.setWindowTitle('Helment EEG GUI (raw data available at {}:{})'.format(pm.udp_ip, pm.udp_port))
         
         # This following line causes and X11 error on GNU/Linux (tried with
         # various distributions)
@@ -73,7 +73,10 @@ class MainWindow(QtWidgets.QMainWindow):
         widget_envelope     = guiwidgets.fg_envelope()
         widget_sbtn         = guiwidgets.fg_stream_button()
         widget_darkmode     = guiwidgets.fg_theme_button()
-        widget_signal       = guiwidgets.fg_signal_stream() # widget_signal also contains channel signals
+        widget_signal       = guiwidgets.fg_signal_stream(
+            int(pm.sample_rate * pm.buffer_length), pm.s_down,
+            [i for i in range(pm.max_chans) if pm.selected_chans[i]],
+            pm.sample_rate)
 
         guiwidgets.initiate_theme() # Needs to be called after widget 
                                     # elements initiation since hard-coded
@@ -97,8 +100,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # other executions
         # -----------------------------------------------------------------
         self.sampling    = Process(target=sampl.fetch_sample,
-            args=(self.send_conn, confboard.ser, 
-            pm.port, pm.firmfeedback))
+            args=(self.send_conn, confboard.ser, pm))
         
         if pm.firmfeedback == 2 or pm.firmfeedback == 3:
             self.sampling.start()
@@ -109,9 +111,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.central_widget.setLayout(vertlayout) # Draw elements in main widget
         # auxgui.report_progress(splash, pb, 10)
 
+        # Prepare data visualization
         self.timer          = QtCore.QTimer()
         self.timer.setInterval(0)
-        self.timer.timeout.connect(lambda: guiwidgets.update_signal_plot(self.recv_conn))
+        self.timer.timeout.connect(lambda: guiwidgets.update_signal_plot(
+            self.recv_conn, pm.s_down, int(pm.sample_rate * pm.buffer_add),
+            pm.sample_rate,
+            range(0, int(pm.sample_rate * pm.buffer_length), pm.s_down),
+            [i for i in range(pm.max_chans) if pm.selected_chans[i]]))
         self.timer.singleShot = False
         
         # Splash screen needs to be closed before timer start

@@ -135,7 +135,9 @@ class Sampling():
         s_chans             = parameter.max_chans
         sampling_rate       = parameter.sample_rate
         saving_interval     = parameter.saving_interval * parameter.sample_rate
-        
+        update_buffer       = zeros((buffer.shape[0], buffer.shape[1]+1))
+        update_times        = zeros((buffer.shape[1]+1), dtype=int)
+
         # Preallocate json relay message and relay connection
         relay_array         = {}
         relay_array["t"]    = ''
@@ -182,7 +184,7 @@ class Sampling():
                     relay_array["".join(["c", str(iBin+1)])] = str(sample[iBin])
 
                 update_buffer       = concatenate((buffer, expand_dims(sample, 1)), axis=1)
-                update_times        = append(time_stamps, time_stamp_now)
+                update_times        = append((time_stamps, time_stamp_now), axis=0)
 
                 # Build new buffer and timestamp arrays
                 buffer              = update_buffer[:, 1:]

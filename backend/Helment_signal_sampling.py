@@ -184,7 +184,7 @@ class Sampling():
                     relay_array["".join(["c", str(iBin+1)])] = str(sample[iBin])
 
                 update_buffer       = concatenate((buffer, expand_dims(sample, 1)), axis=1)
-                update_times        = append((time_stamps, time_stamp_now), axis=0)
+                update_times        = append(time_stamps, time_stamp_now)
 
                 # Build new buffer and timestamp arrays
                 buffer              = update_buffer[:, 1:]

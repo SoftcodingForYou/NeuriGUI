@@ -1,11 +1,11 @@
 #Prepare userland =========================================================
-from backend.Helment_signal_processing      import Processing
-from backend.Helment_configure_board        import ConfigureBoard
-from backend.Helment_signal_sampling        import Sampling
-from backend.Helment_parameter_validation   import ParamVal
-from frontend.Helment_widgets               import GUIWidgets
-from frontend.Helment_user_experience       import Aux
-from frontend.Helment_parameters            import Parameters
+from .backend.Helment_signal_processing      import Processing
+from .backend.Helment_configure_board        import ConfigureBoard
+from .backend.Helment_signal_sampling        import Sampling
+from .backend.Helment_parameter_validation   import ParamVal
+from .frontend.Helment_widgets               import GUIWidgets
+from .frontend.Helment_user_experience       import Aux
+from .frontend.Helment_parameters            import Parameters
 from multiprocessing                        import Process, Pipe
 from PyQt5                                  import QtCore, QtGui, QtWidgets
 import sys  # We need sys so that we can pass argv to QApplication
@@ -134,15 +134,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.send_conn.close()
 
 
-if __name__ == '__main__': # Necessary line for "multiprocessing" to work
-    # pyqt = os.path.dirname(PyQt5.__file__)
-    # os.environ['QT_PLUGIN_PATH'] = os.path.join(pyqt, "Qt/plugins")
+class Run():
 
-    app                     = QtWidgets.QApplication(sys.argv)
-    maingui                 = MainWindow()  # Contains all necessary bits
-    maingui.show()
-    app.exec_()
-    maingui.on_closing()
-    sys.exit()  # Proper way would be "sys.exit(app.exec_())" but it does  
-                # not return the main console
+    def __init__(self):
+
+        app                     = QtWidgets.QApplication(sys.argv)
+        maingui                 = MainWindow()  # Contains all necessary bits
+        maingui.show()
+        app.exec_()
+        maingui.on_closing()
+        sys.exit()  # Proper way would be "sys.exit(app.exec_())" but it does  
+                    # not return the main console
     

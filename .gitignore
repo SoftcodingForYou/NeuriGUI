@@ -28,3 +28,14 @@ frontend/__pycache__/Helment_parameters.cpython-310.pyc
 frontend/__pycache__/Helment_user_experience.cpython-310.pyc
 frontend/__pycache__/Helment_widgets.cpython-310.pyc
 settings.cfg
+neurigui/backend/__pycache__/__init__.cpython-310.pyc
+neurigui/backend/__pycache__/Helment_configure_board.cpython-310.pyc
+neurigui/backend/__pycache__/Helment_parameter_validation.cpython-310.pyc
+neurigui/backend/__pycache__/Helment_signal_processing.cpython-310.pyc
+neurigui/backend/__pycache__/Helment_signal_sampling.cpython-310.pyc
+neurigui/frontend/__pycache__/__init__.cpython-310.pyc
+neurigui/frontend/__pycache__/Helment_parameters.cpython-310.pyc
+neurigui/frontend/__pycache__/Helment_user_experience.cpython-310.pyc
+neurigui/frontend/__pycache__/Helment_widgets.cpython-310.pyc
+neurigui/__pycache__/__init__.cpython-310.pyc
+neurigui/__pycache__/neuri_gui.cpython-310.pyc

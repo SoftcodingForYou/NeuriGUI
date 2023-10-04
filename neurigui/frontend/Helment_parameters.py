@@ -176,7 +176,7 @@ class Parameters:
         #GUI settings
         self.githubauth     = "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"
         self.version        = '2.4'
-        self.ico_helment    = './frontend/Isotipo-Helment-color.ico'
+        # self.ico_helment    = './frontend/Isotipo-Helment-color.ico'
         self.darkmode       = False
 
         #Session-specific parameters
@@ -246,8 +246,8 @@ class Parameters:
 
         # Decorations
         self.paramWin.title('Neuri GUI: Settings')
-        photo = ImageTk.PhotoImage(Image.open(self.ico_helment))
-        self.paramWin.wm_iconphoto(True, photo)
+        # photo = ImageTk.PhotoImage(Image.open(self.ico_helment))
+        # self.paramWin.wm_iconphoto(True, photo)
         
 
         # Add options

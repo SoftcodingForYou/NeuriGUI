@@ -27,3 +27,11 @@ Other Linux specific steps are:
 The compiled version the the Neuri GUI runs way faster and has more stable  execution speed of iteration loops inside the backend of the GUI. You can **compile the GUI with Nuitka**:
 - Windows: `nuitka ./neuri_gui.py --onefile --enable-plugin=tk-inter --standalone --enable-plugin=pyqt5 --include-data-dir=./frontend/=data --windows-icon-from-ico=frontend/Isotipo-Helment-color.ico --windows-disable-console`
 - GNU/Linux: `nuitka3 ./neuri_gui.py --onefile --enable-plugin=tk-inter --standalone --enable-plugin=pyqt5 --include-data-dir=./frontend/=data --windows-icon-from-ico=frontend/Isotipo-Helment-color.ico --windows-disable-console` (note the 3 in nuitka3 compared to Windows)
+
+## Packaging
+
+The Gui is packageable into a **Python module**. For this, run inside the root folder (NeuriGUI) of the project:
+- Windows: `python -m build`
+- GNU/Linux: `python3 -m build`
+
+Afterwards, you can install the module found in NeuriGUI/dist via `pip install ./path/to/NeuriGUI`

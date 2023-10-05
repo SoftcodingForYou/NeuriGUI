@@ -40,7 +40,8 @@ The GUI is packageable into a **Python module**. For this, run inside the root f
 
 The GUI can be run directly from an IDE by calling the `Run()` function found in "./neurigui/neuri_gui.py".
 You can also **install it as a Python module** pointing pip to the root folder of the project (NeuriGUI): `pip install ./path/to/NeuriGUI`. This will install the module found in "NeuriGUI/dist". You can then run the GUI from your own scripts such as:
-```import neurigui.neuri_gui as ng
+```
+import neurigui.neuri_gui as ng
 ng.Run()
 ```
 

@@ -1,11 +1,12 @@
 import tkinter                              as tk
 from PIL                                    import Image, ImageTk
+import os
 
 class ParamVal():
 
     def __init__(self, p):
 
-        self.ico_helment    = './frontend/Isotipo-Helment-color.ico'
+        self.ico_helment    = p.ico_helment
 
         error_messages      = self.verify_compatibility(p)
         self.alert_user(error_messages)

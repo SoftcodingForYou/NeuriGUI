@@ -90,7 +90,7 @@ class Sampling():
         return eeg_array, eeg_valid
 
 
-    def fetch_sample(self, pipe_conn, ser, parameter):
+    def fetch_sample(self, pipe_conn, receiver, transmitter, parameter):
 
         if parameter.firmfeedback == 2: # USB
             s_per_buffer    = 1
@@ -100,22 +100,22 @@ class Sampling():
             print('Ordered board to send data via Bluetooth. Switching mode ...')
 
         # Open communication ----------------------------------------------
-        if ser.port == '':
+        if receiver.port == '':
             raise Exception('Verify that desired connection type (USB or Bluetooth) are indeed available')
         else:
-            ser.open()
+            receiver.open()
             sleep(1)
 
-        ser.write(bytes(str(parameter.firmfeedback), 'utf-8'))
+        receiver.write(bytes(str(parameter.firmfeedback), 'utf-8'))
         # time.sleep(1)
 
         board_booting = True
         print('Board is booting up ...')
         while board_booting:
-            raw_message = str(ser.readline())
+            raw_message = str(receiver.readline())
             print(raw_message)
             if 'Listening ...' in raw_message:
-                ser.write(bytes(str(parameter.firmfeedback), 'utf-8')) # Try again
+                receiver.write(bytes(str(parameter.firmfeedback), 'utf-8')) # Try again
                 sleep(1)
             elif '{' in raw_message and '}' in raw_message:
                 print('Fully started')
@@ -143,18 +143,17 @@ class Sampling():
         relay_array["t"]    = ''
         for iC in range(s_chans):
             relay_array["".join(["c", str(iC+1)])] = ''
-        send_sock           = parameter.send_sock
         udp_ip              = parameter.udp_ip
         udp_port            = parameter.udp_port
 
         for _ in range(1000):
-            ser.read(ser.inWaiting())
+            receiver.read(receiver.inWaiting())
             # Eliminate message queue at port, do this several times to get
             # everything since buffer that we get with inWaiting is limited
             
-        while not ser.closed:
+        while not receiver.closed:
             
-            raw_message             = str(ser.readline())
+            raw_message             = str(receiver.readline())
 
             buffer_in, valid_eeg    = self.channel_assignment(raw_message, s_chans)
 
@@ -190,7 +189,7 @@ class Sampling():
                 buffer              = update_buffer[:, 1:]
                 time_stamps         = update_times[1:]
 
-                send_sock.sendto(bytes(dumps(relay_array), "utf-8"), (udp_ip, udp_port))
+                transmitter.sendto(bytes(dumps(relay_array), "utf-8"), (udp_ip, udp_port))
 
                 pipe_conn.send((buffer, time_stamp_now))
 

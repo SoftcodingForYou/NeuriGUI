@@ -1,11 +1,20 @@
 #Prepare userland =========================================================
-from .backend.Helment_signal_processing      import Processing
-from .backend.Helment_configure_board        import ConfigureBoard
-from .backend.Helment_signal_sampling        import Sampling
-from .backend.Helment_parameter_validation   import ParamVal
-from .frontend.Helment_widgets               import GUIWidgets
-from .frontend.Helment_user_experience       import Aux
-from .frontend.Helment_parameters            import Parameters
+
+# Necessary step for relative imports when the GUI is run directly in an 
+# IDE instead of as module
+if ( __name__ == "__main__" or __name__ == "__mp_main__" ) and ( __package__ == "" or __package__ == None ):
+    pass
+print("".join(("__package__ is: ", __package__)))
+print("".join(("__name__ is: ", __name__)))
+print("".join(("__file__ is: ", __file__)))
+
+from .backend.Helment_signal_processing     import Processing
+from .backend.Helment_configure_board       import ConfigureBoard
+from .backend.Helment_signal_sampling       import Sampling
+from .backend.Helment_parameter_validation  import ParamVal
+from .frontend.Helment_widgets              import GUIWidgets
+from .frontend.Helment_user_experience      import Aux
+from .frontend.Helment_parameters           import Parameters
 from multiprocessing                        import Process, Pipe
 from PyQt5                                  import QtCore, QtGui, QtWidgets
 import sys  # We need sys so that we can pass argv to QApplication
@@ -99,8 +108,16 @@ class MainWindow(QtWidgets.QMainWindow):
         # Generate separate processes to not slow down sampling by any
         # other executions
         # -----------------------------------------------------------------
+
+        # Here, we can not just parse "pm" as it contains non-pickable tk 
+        # objects which will break at self.sampling.start(). We create a 
+        # new object with the necessary variables only
+        strpm = StreamingParameter(
+            pm.firmfeedback, pm.max_chans, pm.buffer_add, pm.buffer_length,
+            pm.sample_rate, pm.PGA, pm.saving_interval, pm.udp_ip,
+            pm.udp_port)
         self.sampling    = Process(target=sampl.fetch_sample,
-            args=(self.send_conn, confboard.ser, pm))
+            args=(self.send_conn, confboard.ser, pm.send_sock, strpm))
         
         if pm.firmfeedback == 2 or pm.firmfeedback == 3:
             self.sampling.start()
@@ -134,6 +151,31 @@ class MainWindow(QtWidgets.QMainWindow):
         self.send_conn.close()
 
 
+class StreamingParameter(object):
+    firmfeedback    = 0
+    max_chans       = 0
+    buffer_add      = 0
+    buffer_length   = 0
+    sample_rate     = 0
+    PGA             = 0
+    saving_interval = 0
+    udp_ip          = ""
+    udp_port        = 0
+
+    # The class "constructor" - It's actually an initializer 
+    def __init__(self, firmfeedback, max_chans, buffer_add, buffer_length,
+                 sample_rate, PGA, saving_interval, udp_ip, udp_port):
+        self.firmfeedback   = firmfeedback
+        self.max_chans      = max_chans
+        self.buffer_add     = buffer_add
+        self.buffer_length  = buffer_length
+        self.sample_rate    = sample_rate
+        self.PGA            = PGA
+        self.saving_interval= saving_interval
+        self.udp_ip         = udp_ip
+        self.udp_port       = udp_port
+
+
 class Run():
 
     def __init__(self):
@@ -146,3 +188,6 @@ class Run():
         sys.exit()  # Proper way would be "sys.exit(app.exec_())" but it does  
                     # not return the main console
     
+
+if __name__ == '__main__': # If run from IDEs instead of as module
+    Run()

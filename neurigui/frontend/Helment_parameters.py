@@ -14,6 +14,9 @@ class Parameters:
         super(Parameters, self).__init__()
 
         self.conf_file      = './settings.cfg'
+        self.githubauth     = "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"
+        self.version        = '2.5'
+        # self.ico_helment    = './frontend/Isotipo-Helment-color.ico'
 
         self.set_defaults() # Necessary to execute first in case user 
                             # parameter not found in configuration file
@@ -172,11 +175,6 @@ class Parameters:
     def set_defaults(self):
 
         self.all_set        = False
-        
-        #GUI settings
-        self.githubauth     = "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"
-        self.version        = '2.4'
-        # self.ico_helment    = './frontend/Isotipo-Helment-color.ico'
         self.darkmode       = False
 
         #Session-specific parameters
@@ -287,7 +285,7 @@ class Parameters:
         frameVersion.pack(pady=0, padx=self.framePadX, fill=tk.X, expand=True, side=tk.TOP)
 
         rawtoken = self.githubauth
-        repository = "Helment/DataFlow"
+        repository = "Helment/NeuriGUI"
 
         token = os.getenv('GITHUB_TOKEN', rawtoken)
         g = Github(token)

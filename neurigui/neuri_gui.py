@@ -2,23 +2,26 @@
 
 # Necessary step for relative imports when the GUI is run directly in an 
 # IDE instead of as module
-if ( __name__ == "__main__" or __name__ == "__mp_main__" ) and ( __package__ == "" or __package__ == None ):
-    pass
-print("".join(("__package__ is: ", __package__)))
-print("".join(("__name__ is: ", __name__)))
-print("".join(("__file__ is: ", __file__)))
+if ( __package__ == "" or __package__ == None ):
+    from backend.Helment_signal_processing      import Processing
+    from backend.Helment_configure_board        import ConfigureBoard
+    from backend.Helment_signal_sampling        import Sampling
+    from backend.Helment_parameter_validation   import ParamVal
+    from frontend.Helment_widgets               import GUIWidgets
+    from frontend.Helment_user_experience       import Aux
+    from frontend.Helment_parameters            import Parameters
+else:
+    from .backend.Helment_signal_processing     import Processing
+    from .backend.Helment_configure_board       import ConfigureBoard
+    from .backend.Helment_signal_sampling       import Sampling
+    from .backend.Helment_parameter_validation  import ParamVal
+    from .frontend.Helment_widgets              import GUIWidgets
+    from .frontend.Helment_user_experience      import Aux
+    from .frontend.Helment_parameters           import Parameters
 
-from .backend.Helment_signal_processing     import Processing
-from .backend.Helment_configure_board       import ConfigureBoard
-from .backend.Helment_signal_sampling       import Sampling
-from .backend.Helment_parameter_validation  import ParamVal
-from .frontend.Helment_widgets              import GUIWidgets
-from .frontend.Helment_user_experience      import Aux
-from .frontend.Helment_parameters           import Parameters
-from multiprocessing                        import Process, Pipe
-from PyQt5                                  import QtCore, QtGui, QtWidgets
+from multiprocessing                            import Process, Pipe
+from PyQt5                                      import QtCore, QtWidgets
 import sys  # We need sys so that we can pass argv to QApplication
-import os
 
 
 class MainWindow(QtWidgets.QMainWindow):

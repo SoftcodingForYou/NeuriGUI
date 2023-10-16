@@ -188,8 +188,11 @@ class Run():
         maingui.show()
         app.exec_()
         maingui.on_closing()
-        sys.exit()  # Proper way would be "sys.exit(app.exec_())" but it does  
-                    # not return the main console
+        if ( __package__ == "" or __package__ == None ):
+            sys.exit()
+        else:
+            # sys.exit(app.exec_())
+            app.quit()
     
 
 if __name__ == '__main__': # If run from IDEs instead of as module

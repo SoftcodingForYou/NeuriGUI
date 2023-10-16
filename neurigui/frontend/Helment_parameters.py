@@ -17,7 +17,7 @@ class Parameters:
 
         self.conf_file      = os.path.join(".", "settings.cfg")
         self.githubauth     = "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"
-        self.version        = '2.5'
+        self.version        = '2.6'
         self.ico_helment    = os.path.join(self.frontend_path, "Isotipo-Helment-color.ico")
 
         self.set_defaults() # Necessary to execute first in case user 

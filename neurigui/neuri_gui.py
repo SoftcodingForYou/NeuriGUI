@@ -45,14 +45,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # splash, pb          = auxgui.disp_splash()
         # auxgui.report_progress(splash, pb, 5)
 
-        guiwidgets          = GUIWidgets(self, proc, pm)
-
-        # Inherit processing functions that will be used during plot update
-        guiwidgets.prepare_buffer   = proc.prepare_buffer
-        guiwidgets.extract_envelope = proc.extract_envelope
-
-        # auxgui.report_progress(splash, pb, 5)
-
         # Load methods and build communication with EEG board
         # -----------------------------------------------------------------
         # auxgui.report_progress(splash, pb, 5)
@@ -61,15 +53,37 @@ class MainWindow(QtWidgets.QMainWindow):
         sampl               = Sampling(pm)        # Signal handling
         # auxgui.report_progress(splash, pb, 5)
 
+        # Generate variable exchange pipe
+        # -----------------------------------------------------------------
+        self.recv_conn, self.send_conn = Pipe(duplex = False)
+
+        # Generate separate processes to not slow down sampling by any
+        # other executions (CAREFUL: Pipe() is blocking. We take care of 
+        # that with a buffer-emptying function later)
+        # -----------------------------------------------------------------
+
+        # Here, we can not just parse "pm" as it contains non-pickable tk 
+        # objects which will break at self.sampling.start(). We create a 
+        # new object with the necessary variables only
+        strpm = StreamingParameter(
+            pm.firmfeedback, pm.max_chans, pm.buffer_add, pm.buffer_length,
+            pm.sample_rate, pm.PGA, pm.saving_interval, pm.udp_ip,
+            pm.udp_port)
+        self.sampling    = Process(target=sampl.fetch_sample,
+            args=(self.send_conn, confboard.ser, pm.send_sock, strpm))
+
         # Build GUI
         # -----------------------------------------------------------------
         super(MainWindow, self).__init__(*args, **kwargs)
-
-        self.setWindowTitle('Helment EEG GUI (raw data available at {}:{})'.format(pm.udp_ip, pm.udp_port))
         
         # This following line causes and X11 error on GNU/Linux (tried with
         # various distributions)
         # self.setWindowIcon(QtGui.QIcon(pm.img_helment))
+        
+        guiwidgets          = GUIWidgets(self, proc, pm)
+        # Inherit processing functions that will be used during plot update
+        guiwidgets.prepare_buffer   = proc.prepare_buffer
+        guiwidgets.extract_envelope = proc.extract_envelope
         
         self.central_widget = QtWidgets.QWidget() # A QWidget to work as Central Widget
 
@@ -89,61 +103,61 @@ class MainWindow(QtWidgets.QMainWindow):
             int(pm.sample_rate * pm.buffer_length), pm.s_down,
             [i for i in range(pm.max_chans) if pm.selected_chans[i]],
             pm.sample_rate)
+        widget_headless     = guiwidgets.fg_static_info(pm.udp_ip, pm.udp_port)
 
         guiwidgets.initiate_theme() # Needs to be called after widget 
                                     # elements initiation since hard-coded
         # auxgui.report_progress(splash, pb, 15)
 
-        vertlayout.addLayout(controlpanel)
-        controlpanel.addWidget(widget_vrange)
-        controlpanel.addWidget(widget_notch)
-        controlpanel.addWidget(widget_bandpass)
-        controlpanel.addWidget(widget_envelope)
-        controlpanel.addWidget(widget_sbtn)
-        controlpanel.addWidget(widget_darkmode)
-        vertlayout.addWidget(widget_signal)
-        # auxgui.report_progress(splash, pb, 5)
-
-        # Generate variable exchange pipe
-        # -----------------------------------------------------------------
-        self.recv_conn, self.send_conn = Pipe(duplex = False)
-
-        # Generate separate processes to not slow down sampling by any
-        # other executions
-        # -----------------------------------------------------------------
-
-        # Here, we can not just parse "pm" as it contains non-pickable tk 
-        # objects which will break at self.sampling.start(). We create a 
-        # new object with the necessary variables only
-        strpm = StreamingParameter(
-            pm.firmfeedback, pm.max_chans, pm.buffer_add, pm.buffer_length,
-            pm.sample_rate, pm.PGA, pm.saving_interval, pm.udp_ip,
-            pm.udp_port)
-        self.sampling    = Process(target=sampl.fetch_sample,
-            args=(self.send_conn, confboard.ser, pm.send_sock, strpm))
-        
-        if pm.firmfeedback == 2 or pm.firmfeedback == 3:
-            self.sampling.start()
-        # auxgui.report_progress(splash, pb, 10)
-        
-        ## Finalize
         self.setCentralWidget(self.central_widget)
         self.central_widget.setLayout(vertlayout) # Draw elements in main widget
         # auxgui.report_progress(splash, pb, 10)
 
-        # Prepare data visualization
-        self.timer          = QtCore.QTimer()
+        self.timer              = QtCore.QTimer()
         self.timer.setInterval(0)
-        self.timer.timeout.connect(lambda: guiwidgets.update_signal_plot(
-            self.recv_conn, pm.s_down, int(pm.sample_rate * pm.buffer_add),
-            pm.sample_rate,
-            range(0, int(pm.sample_rate * pm.buffer_length), pm.s_down),
-            [i for i in range(pm.max_chans) if pm.selected_chans[i]]))
-        self.timer.singleShot = False
-        
+        self.timer.singleShot   = False
+
+        if pm.run_headless:
+
+            self.setWindowTitle("Headless sampling")
+
+            # Add GUI elements
+            vertlayout.addWidget(widget_headless)
+            self.setCentralWidget(self.central_widget)
+            self.central_widget.setLayout(vertlayout) # Draw elements in main widget
+
+            # Prepare buffer-emptying function
+            self.timer.timeout.connect(lambda: sampl.headless_sampling(self.recv_conn))
+
+        else:
+            
+            self.setWindowTitle('Helment EEG GUI (raw data available at {}:{})'.format(pm.udp_ip, pm.udp_port))
+
+            # Add GUI elements
+            vertlayout.addLayout(controlpanel)
+            controlpanel.addWidget(widget_vrange)
+            controlpanel.addWidget(widget_notch)
+            controlpanel.addWidget(widget_bandpass)
+            controlpanel.addWidget(widget_envelope)
+            controlpanel.addWidget(widget_sbtn)
+            controlpanel.addWidget(widget_darkmode)
+            vertlayout.addWidget(widget_signal)
+            
+            # Prepare data visualization
+            self.timer.timeout.connect(lambda: guiwidgets.update_signal_plot(
+                self.recv_conn, pm.s_down, int(pm.sample_rate * pm.buffer_add),
+                pm.sample_rate,
+                range(0, int(pm.sample_rate * pm.buffer_length), pm.s_down),
+                [i for i in range(pm.max_chans) if pm.selected_chans[i]]))
+
         # Splash screen needs to be closed before timer start
         # auxgui.report_progress(splash, pb, 19)
         # splash.destroy()
+
+        # Start sampling processes
+        # -----------------------------------------------------------------
+        if pm.firmfeedback == 2 or pm.firmfeedback == 3:
+            self.sampling.start()
         self.timer.start()
         
 

@@ -17,7 +17,7 @@ class Parameters:
 
         self.conf_file      = os.path.join(".", "settings.cfg")
         self.githubauth     = "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"
-        self.version        = '2.6'
+        self.version        = '2.70'
         self.ico_helment    = os.path.join(self.frontend_path, "Isotipo-Helment-color.ico")
 
         self.set_defaults() # Necessary to execute first in case user 
@@ -74,38 +74,45 @@ class Parameters:
                     self.darkmode           = True
                 elif 'Darkmode' in setting and 'False' in setting:
                     self.darkmode           = False
+                if 'Headless' in setting and 'True' in setting:
+                    self.run_headless       = True
+                elif 'Headless' in setting and 'False' in setting:
+                    self.run_headless       = False
                 elif 'SamplingRate' in setting:
                     try:
                         self.sample_rate    = int(setting[setting.find('=')+1:])
                     except:
-                        pass
+                        print("Could not load \"SamplingRate\" from configuration")
                 elif 'AmountChannels' in setting:
                     try:
                         self.max_chans      = int(setting[setting.find('=')+1:])
                     except:
-                        pass
+                        print("Could not load \"AmountChannels\" from configuration")
                 elif 'TimeRange' in setting:
                     try:
                         self.buffer_length  = int(setting[setting.find('=')+1:])
                     except:
-                        pass
+                        print("Could not load \"TimeRange\" from configuration")
                 elif 'PGA' in setting:
                     try:
                         self.PGA            = int(setting[setting.find('=')+1:])
                     except:
-                        pass
+                        print("Could not load \"PGA\" from configuration")
                 elif 'Port' in setting:
                     try:
                         self.port           = str(setting[setting.find('=')+1:])
                         if '\n' in self.port:
                             self.port = self.port.replace('\n', '')
+                        ports = [port.device for port in list(serial.tools.list_ports.comports())]
+                        if len([p for p in ports if p == self.port]) == 0:
+                            self.port = ''
                     except:
-                        pass
+                        print("Could not load \"Port\" from configuration")
                 elif 'DownsamplingFactor' in setting:
                     try:
                         self.s_down         = int(setting[setting.find('=')+1:])
                     except:
-                        pass
+                        print("Could not load \"DownsamplingFactor\" from configuration")
 
         print("Loaded user-defined settings")
 
@@ -127,7 +134,8 @@ class Parameters:
                     "".join(["TimeRange=", str(self.buffer_length), end_line]),
                     "".join(["PGA=", str(self.PGA), end_line]),
                     "".join(["Port=", str(self.port), end_line]),
-                    "".join(["DownsamplingFactor=", str(self.s_down), end_line])
+                    "".join(["DownsamplingFactor=", str(self.s_down), end_line]),
+                    "".join(["Headless=", str(self.run_headless), end_line])
                     ]
 
                 f.write("".join(settings))
@@ -153,6 +161,8 @@ class Parameters:
                         settings[i]             = "".join(["Port=", str(self.port), end_line])
                     elif 'DownsamplingFactor' in setting:
                         settings[i]             = "".join(["DownsamplingFactor=", str(self.s_down), end_line])
+                    elif 'Headless' in setting:
+                        settings[i]             = "".join(["Headless=", str(self.run_headless), end_line])
 
                 new_settings = []
                 if len([s for s in settings if "Darkmode" in s]) == 0:
@@ -169,6 +179,8 @@ class Parameters:
                     new_settings.append("".join(["Port=", str(self.port), end_line]))
                 if len([s for s in settings if "DownsamplingFactor" in s]) == 0:
                     new_settings.append("".join(["DownsamplingFactor=", str(self.s_down), end_line]))
+                if len([s for s in settings if "Headless" in s]) == 0:
+                    new_settings.append("".join(["Headless=", str(self.run_headless), end_line]))
 
             with open(self.conf_file, 'w') as f:
                 f.write("".join(settings + new_settings))
@@ -178,6 +190,7 @@ class Parameters:
 
         self.all_set        = False
         self.darkmode       = False
+        self.run_headless   = False
 
         #Session-specific parameters
         self.yrange         = [-0, 0] # List of scalars ([negative, positive]) in order to set figure y axis range
@@ -252,14 +265,18 @@ class Parameters:
 
         # Add options
         self.display_version(self.paramWin)
-        self.display_ports(self.add_frame_ext_x())
-        self.display_protocol(self.add_frame_ext_x())
-        self.display_gains(self.add_frame_ext_x())
-        self.display_samplingrate(self.add_frame_ext_x())
-        self.display_timerange(self.add_frame_ext_x())
-        self.display_channels(self.add_frame_ext_x())
-        self.display_output_name(self.add_frame_ext_x())
-        self.display_speed_up(self.add_frame_ext_x())
+
+        # Elements to place into srollable frame
+        frameScroll = self.add_scrollable_frame(self.paramWin)
+        self.display_ports(self.add_frame_ext_x(frameScroll))
+        self.display_protocol(self.add_frame_ext_x(frameScroll))
+        self.display_gains(self.add_frame_ext_x(frameScroll))
+        self.display_samplingrate(self.add_frame_ext_x(frameScroll))
+        self.display_timerange(self.add_frame_ext_x(frameScroll))
+        self.display_channels(self.add_frame_ext_x(frameScroll))
+        self.display_output_name(self.add_frame_ext_x(frameScroll))
+        self.display_speed_up(self.add_frame_ext_x(frameScroll))
+        self.display_headless(self.add_frame_ext_x(frameScroll))
         self.display_validate(self.paramWin)
         
         # Set GUI interaction behavior
@@ -274,17 +291,24 @@ class Parameters:
         self.paramWin.protocol('WM_DELETE_WINDOW', self.on_closing)
 
 
-    def add_frame_ext_x(self):
-        frameMain               = customtkinter.CTkFrame(master=self.paramWin)
+    def add_frame_ext_x(self, master):
+        frameMain               = customtkinter.CTkFrame(master=master)
         frameMain.pack(pady=self.framePadY, padx=self.framePadX, fill="both", expand=True)
         return frameMain
+
+
+    def add_scrollable_frame(self, master):
+        frameScroll             = customtkinter.CTkScrollableFrame(master=master,
+            bg_color="transparent", fg_color="transparent")
+        frameScroll.pack(pady=self.framePadY, padx=self.framePadX, fill="both", expand=True)
+        return frameScroll
     
 
     def display_version(self, master):
 
         frameVersion             = customtkinter.CTkFrame(
             master=master, bg_color="transparent", fg_color="transparent")
-        frameVersion.pack(pady=0, padx=self.framePadX, fill=tk.X, expand=True, side=tk.TOP)
+        frameVersion.pack(pady=0, padx=self.framePadX, fill=tk.X, expand=False, side=tk.TOP)
 
         rawtoken = self.githubauth
         repository = "Helment/NeuriGUI"
@@ -514,9 +538,10 @@ class Parameters:
                                             command=self.select_channels,
                                             variable=self.channels[i],
                                             onvalue=True,
-                                            offvalue=False)
+                                            offvalue=False,
+                                            width=50)
             cb.select()
-            cb.pack(pady=self.widgetPadY, padx=0, side=tk.LEFT, expand=True)
+            cb.pack(pady=self.widgetPadY, padx=0, side=tk.LEFT, expand=True, fill=None)
 
 
     def select_channel_amount(self, event):
@@ -628,6 +653,30 @@ class Parameters:
 
         self.s_down = int(event)
         print('Downsampling intensity set to {}'.format(self.s_down))
+
+
+    def display_headless(self, master):
+
+        labelHeadless = customtkinter.CTkLabel(master=master, 
+                                            justify=customtkinter.LEFT,
+                                            text='Sample data without GUI (headless)')
+        labelHeadless.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
+
+        self.toggled_headless = tk.BooleanVar()
+        cb = customtkinter.CTkCheckBox(master=master,
+                                        text='',
+                                        command=self.set_headless,
+                                        variable=self.toggled_headless,
+                                        onvalue=True,
+                                        offvalue=False)
+        if self.run_headless:
+            cb.select()
+        cb.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
+
+
+    def set_headless(self):
+
+        self.run_headless = self.toggled_headless.get()
 
 
     def display_validate(self, master):

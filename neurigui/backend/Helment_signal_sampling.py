@@ -205,6 +205,15 @@ class Sampling():
                     time_reset          = time_stamp_now
 
 
+    def headless_sampling(self, recv_conn):
+        # Python's multiprocessing's Pipe() is sending and receiving data 
+        # in blocking mode. That means if a sender is putting data in the 
+        # memory buffer, but no consumer is receiving it, the sending of 
+        # data is blocked until the buffer is emptied. This here is a 
+        # pseudo-sampling function purely designed to empty the buffer.
+        buffer, t_now   = recv_conn.recv()
+
+
     def master_write_data(self, eeg_data, time_stamps, saving_interval,
         output_file):
         # =================================================================

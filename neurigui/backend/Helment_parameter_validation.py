@@ -19,7 +19,7 @@ class ParamVal():
         if p.saving_interval > p.buffer_length: #Checkpoint of parameters
             error_messages.append('Buffer can not be shorter than saving interval./nThis is a developer error and not your responsability as a user. Please contact the developers.')
         
-        if len([i for i in range(p.max_chans) if p.selected_chans[i]]) == 0:
+        if len([i for i in range(p.max_chans) if p.selected_chans[i]]) == 0 and not p.run_headless:
             error_messages.append('No channel selected for display. Please select at least one.')
         
         if len(p.sessionName) == 0:
@@ -31,7 +31,7 @@ class ParamVal():
         if len(p.port) == 0:
             error_messages.append('No device set to connect to. Chose a valid COM port.')
         
-        if (p.sample_rate * p.buffer_length / p.s_down) % 1 != 0:
+        if (p.sample_rate * p.buffer_length / p.s_down) % 1 != 0 and not p.run_headless:
             error_messages.append('Time range, sampling rate and downsample factor have to be set so that (time range * sampling rate / downscale factor is an integer.).')
         
         return error_messages

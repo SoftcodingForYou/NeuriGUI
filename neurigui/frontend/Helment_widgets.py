@@ -232,6 +232,18 @@ class GUIWidgets():
         self.theme.setLayout(vertlayout)
         
         return self.theme
+
+
+    def fg_static_info(self, udp_ip, udp_port):
+        self.headless       = QtWidgets.QWidget()
+        vertlayout          = QtWidgets.QVBoxLayout()
+        title               = QtWidgets.QLabel("""
+You are running the GUI headlessly (no GUI displayed).
+The raw data is available at {}:{}""".format(udp_ip, udp_port))
+        vertlayout.addWidget(title)
+        self.headless.setLayout(vertlayout)
+
+        return self.headless
     
 
     def fg_signal_stream(self, num_samples, s_down, displ_chans, sampling_rate):
@@ -504,6 +516,7 @@ class GUIWidgets():
         self.vert_range.setPalette(self.lighttheme)
         self.streambtn.setPalette(self.lighttheme)
         self.themebtn.setPalette(self.lighttheme)
+        self.headless.setPalette(self.lighttheme)
         self.streambtn.setStyleSheet(
             'QPushButton {background-color: rgb(222,235,247); border-radius: 10px;padding: 6px;color: #08519c;}')
         self.themebtn.setStyleSheet(
@@ -525,6 +538,7 @@ class GUIWidgets():
         self.vert_range.setPalette(self.darktheme)
         self.streambtn.setPalette(self.darktheme)
         self.themebtn.setPalette(self.darktheme)
+        self.headless.setPalette(self.darktheme)
         self.streambtn.setStyleSheet(
             'QPushButton {background-color: rgb(49,130,189); border-radius: 10px;padding: 6px; color: #eff3ff;}')
         self.themebtn.setStyleSheet(

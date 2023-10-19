@@ -48,4 +48,4 @@ ng.Run()
 Note that your settings are stored in a "settings.cfg" file inside the current workspace directory of the IDE or terminal.
 
 ## Overview
-![Main view of GUI](./neurigui/Neuri_GUI_main_window.png)
+![Main view of GUI](./neurigui/assets/Neuri_GUI_main_window.png)

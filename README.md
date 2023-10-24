@@ -5,6 +5,8 @@ Neuri is an EEG board developed by Helment. This GUI is working with Neuri versi
 2. Forward the signal (raw) in to a serial port located at 127.0.0.1:XYZ. This allows you to connect any of your applications to the GUI and to work with the acquired signal in real-time.
 3. Store the data in an open text format for offline analysis (default: "Helment_[datetime].txt")
 
+![Main view of GUI](./neurigui/assets/Neuri_GUI_main_window.png)
+
 ## Setup
 
 The GUI is distributed as a Python program. The GUI should work with **Python versions 3.9 or higher**.
@@ -14,7 +16,7 @@ The GUI is distributed as a Python program. The GUI should work with **Python ve
 You can set up the environment (Python **libraries**) by running:
 `pip install -r requirements.txt` (file found in root folder of project)
 
-Please note that the GUI is also using the **tkinter** framework which is **not** installable via `pip`. You have to install this during installation of the Python language. On GNU/Linux-based systems, it can be installed via the package manager (apt for Ubuntu):
+Please note that the GUI is also using the **tkinter** framework which is **not** installable via `pip`. On Windows, it is automatically installed during installation of Python. On GNU/Linux-based systems, it can be installed via the package manager (apt for Ubuntu):
 `apt install python3-tk`
 
 ### GNU/Linux
@@ -47,5 +49,6 @@ ng.Run()
 
 Note that your settings are stored in a "settings.cfg" file inside the current workspace directory of the IDE or terminal.
 
-## Overview
-![Main view of GUI](./neurigui/assets/Neuri_GUI_main_window.png)
+## Troubleshooting
+
+1. If the GUI seems to be stuck, most probably the wrong ports have been selected Check the port names (ie COM12 vs COM13). Pay special attention to the fact that if a port file is specified in the settings.conf, the GUI will default to that port even if there is no device connected to it.

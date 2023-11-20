@@ -60,8 +60,9 @@ class GUIWidgets():
         rbtn2               = QtWidgets.QRadioButton(str(vertranges[1]))
         rbtn3               = QtWidgets.QRadioButton(str(vertranges[2]))
         rbtn4               = QtWidgets.QRadioButton(str(vertranges[3]))
-        range_input         = QtWidgets.QLineEdit(str(self.yrange[1]))
-        range_input.setGeometry(0, 0, 50, range_input.geometry().width())
+        self.range_input    = QtWidgets.QLineEdit(str(self.yrange[1]))
+        self.range_input.setGeometry(0, 0, 50, self.range_input.geometry().width())
+        self.range_input.setFixedWidth(50)
         
         if self.yrange[1] == vertranges[0]:
             rbtn1.setChecked(True)
@@ -72,12 +73,12 @@ class GUIWidgets():
         elif self.yrange[1] == vertranges[3]:
             rbtn4.setChecked(True)
 
-        rbtn1.clicked.connect(lambda: self.yrange_selection(vertranges[0], title, range_input))
-        rbtn2.clicked.connect(lambda: self.yrange_selection(vertranges[1], title, range_input))
-        rbtn3.clicked.connect(lambda: self.yrange_selection(vertranges[2], title, range_input))
-        rbtn4.clicked.connect(lambda: self.yrange_selection(vertranges[3], title, range_input))
-        range_input.returnPressed.connect(lambda: self.custom_yrange(
-            range_input.text(), [rbtn1, rbtn2, rbtn3, rbtn4], title))
+        rbtn1.clicked.connect(lambda: self.yrange_selection(vertranges[0], title, self.range_input))
+        rbtn2.clicked.connect(lambda: self.yrange_selection(vertranges[1], title, self.range_input))
+        rbtn3.clicked.connect(lambda: self.yrange_selection(vertranges[2], title, self.range_input))
+        rbtn4.clicked.connect(lambda: self.yrange_selection(vertranges[3], title, self.range_input))
+        self.range_input.returnPressed.connect(lambda: self.custom_yrange(
+            self.range_input.text(), [rbtn1, rbtn2, rbtn3, rbtn4], title))
 
 
         vertlayout.addWidget(title)
@@ -86,7 +87,7 @@ class GUIWidgets():
         horilayout.addWidget(rbtn2)
         horilayout.addWidget(rbtn3)
         horilayout.addWidget(rbtn4)
-        horilayout.addWidget(range_input)
+        horilayout.addWidget(self.range_input)
         self.vert_range.setLayout(vertlayout)
 
         return self.vert_range
@@ -349,20 +350,19 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
                 -max([abs(min(v_buffer)), abs(max(v_buffer))]),
                 max([abs(min(v_buffer)), abs(max(v_buffer))])]
         else:
-            vscale = self.yrange
+            vscale = list(self.yrange)
 
         
         # Correct units by 10^3
         if vscale[1] >= 1000000:
-            adj_scale           = [vscale[0] / 1000000, vscale[1] / 1000000]
+            vscale              = [x / 1000000 for x in vscale]
             down_buffer         = down_buffer / 1000000
             amp_label           = 'A (V)'
         elif vscale[1] >= 1000:
-            adj_scale           = [vscale[0] / 1000, vscale[1] / 1000]
+            vscale              = [x / 1000 for x in vscale]
             down_buffer         = down_buffer / 1000
             amp_label           = 'A (mV)'
         else:
-            adj_scale           = [vscale[0], vscale[1]]
             amp_label           = 'A (uV)'
             
         
@@ -377,9 +377,9 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             self.data_line[iChan].setData(self.x, self.y[iChan])  # Update the data
 
             if self.envelope == True:
-                self.signalgraph[iChan].setYRange(0, adj_scale[1], padding=0)
+                self.signalgraph[iChan].setYRange(0, vscale[1], padding=0)
             else:
-                self.signalgraph[iChan].setYRange(adj_scale[0], adj_scale[1], padding=0)
+                self.signalgraph[iChan].setYRange(vscale[0], vscale[1], padding=0)
 
             self.signalgraph[iChan].setLabel('left', amp_label)
 
@@ -551,6 +551,8 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         self.streambtn.setPalette(self.lighttheme)
         self.themebtn.setPalette(self.lighttheme)
         self.headless.setPalette(self.lighttheme)
+        self.range_input.setStyleSheet(
+            'QLineEdit {background-color: rgb(255,255,255); color: rgb(0,0,0);}')
         self.streambtn.setStyleSheet(
             'QPushButton {background-color: rgb(222,235,247); border-radius: 10px;padding: 6px;color: #08519c;}')
         self.themebtn.setStyleSheet(
@@ -573,6 +575,8 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         self.streambtn.setPalette(self.darktheme)
         self.themebtn.setPalette(self.darktheme)
         self.headless.setPalette(self.darktheme)
+        self.range_input.setStyleSheet(
+            'QLineEdit {background-color: rgb(53, 53, 53); color: #eff3ff;}')
         self.streambtn.setStyleSheet(
             'QPushButton {background-color: rgb(49,130,189); border-radius: 10px;padding: 6px; color: #eff3ff;}')
         self.themebtn.setStyleSheet(

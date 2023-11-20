@@ -193,7 +193,7 @@ class Parameters:
         self.run_headless   = False
 
         #Session-specific parameters
-        self.yrange         = [-0, 0] # List of scalars ([negative, positive]) in order to set figure y axis range
+        self.yrange         = [-200, 200] # List of scalars ([negative, positive]) in order to set figure y axis range
         self.notch          = 0 # Integer 0 (Off), 50 (50 Hz) or 60 (60 Hz)
         self.bpass          = 0 # Integer -1 to 3 according to number of options in "frequency_bands" below
         self.dispenv        = False # Boolean 0 (Off), 1 (On)
@@ -417,7 +417,7 @@ class Parameters:
 
     def display_gains(self, master):
 
-        gains = ['2', '4', '8', '24']
+        gains = ['1', '2', '4', '6', '8', '12', '24']
         idx_def = [i for i in range(len(gains)) if int(gains[i]) == self.PGA]
 
         labelGain = customtkinter.CTkLabel(master=master, 

@@ -21,7 +21,6 @@ class GUIWidgets():
         self.notch          = parameter.notch
         self.bpass          = parameter.bpass
         self.denv           = parameter.dispenv
-        self.yrange         = parameter.yrange
 
         # Defaults
         self.streaming      = True
@@ -50,32 +49,36 @@ class GUIWidgets():
         # Vert. range (uV)
         # rbt1 (Auto) rdbt2 (100) rdbt3 (200) rdbt4 (500) rdbt5 (1000)
         # -----------------------------------------------------------------
+
+        vertranges          = [0, 200, 500, 1000] # 0 is auto scaling
+
         self.vert_range     = QtWidgets.QWidget()
         vertlayout          = QtWidgets.QVBoxLayout()
         horilayout          = QtWidgets.QHBoxLayout()
         title               = QtWidgets.QLabel('Vertical range (uV)')
         rbtn1               = QtWidgets.QRadioButton('Auto')
-        rbtn2               = QtWidgets.QRadioButton('100')
-        rbtn3               = QtWidgets.QRadioButton('200')
-        rbtn4               = QtWidgets.QRadioButton('500')
-        rbtn5               = QtWidgets.QRadioButton('1000')
+        rbtn2               = QtWidgets.QRadioButton(str(vertranges[1]))
+        rbtn3               = QtWidgets.QRadioButton(str(vertranges[2]))
+        rbtn4               = QtWidgets.QRadioButton(str(vertranges[3]))
+        range_input         = QtWidgets.QLineEdit(str(self.yrange[1]))
+        range_input.setGeometry(0, 0, 50, range_input.geometry().width())
         
-        if self.yrange[1] == 0:
+        if self.yrange[1] == vertranges[0]:
             rbtn1.setChecked(True)
-        elif self.yrange[1] == 100:
+        elif self.yrange[1] == vertranges[1]:
             rbtn2.setChecked(True)
-        elif self.yrange[1] == 200:
+        elif self.yrange[1] == vertranges[2]:
             rbtn3.setChecked(True)
-        elif self.yrange[1] == 500:
+        elif self.yrange[1] == vertranges[3]:
             rbtn4.setChecked(True)
-        elif self.yrange[1] == 1000:
-            rbtn5.setChecked(True)
 
-        rbtn1.clicked.connect(lambda: self.yrange_selection(0))
-        rbtn2.clicked.connect(lambda: self.yrange_selection(100))
-        rbtn3.clicked.connect(lambda: self.yrange_selection(200))
-        rbtn4.clicked.connect(lambda: self.yrange_selection(500))
-        rbtn5.clicked.connect(lambda: self.yrange_selection(1000))
+        rbtn1.clicked.connect(lambda: self.yrange_selection(vertranges[0], title, range_input))
+        rbtn2.clicked.connect(lambda: self.yrange_selection(vertranges[1], title, range_input))
+        rbtn3.clicked.connect(lambda: self.yrange_selection(vertranges[2], title, range_input))
+        rbtn4.clicked.connect(lambda: self.yrange_selection(vertranges[3], title, range_input))
+        range_input.returnPressed.connect(lambda: self.custom_yrange(
+            range_input.text(), [rbtn1, rbtn2, rbtn3, rbtn4], title))
+
 
         vertlayout.addWidget(title)
         vertlayout.addLayout(horilayout)
@@ -83,7 +86,7 @@ class GUIWidgets():
         horilayout.addWidget(rbtn2)
         horilayout.addWidget(rbtn3)
         horilayout.addWidget(rbtn4)
-        horilayout.addWidget(rbtn5)
+        horilayout.addWidget(range_input)
         self.vert_range.setLayout(vertlayout)
 
         return self.vert_range
@@ -347,6 +350,21 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
                 max([abs(min(v_buffer)), abs(max(v_buffer))])]
         else:
             vscale = self.yrange
+
+        
+        # Correct units by 10^3
+        if vscale[1] >= 1000000:
+            adj_scale           = [vscale[0] / 1000000, vscale[1] / 1000000]
+            down_buffer         = down_buffer / 1000000
+            amp_label           = 'A (V)'
+        elif vscale[1] >= 1000:
+            adj_scale           = [vscale[0] / 1000, vscale[1] / 1000]
+            down_buffer         = down_buffer / 1000
+            amp_label           = 'A (mV)'
+        else:
+            adj_scale           = [vscale[0], vscale[1]]
+            amp_label           = 'A (uV)'
+            
         
 
         # Update plots for every channel
@@ -359,9 +377,11 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             self.data_line[iChan].setData(self.x, self.y[iChan])  # Update the data
 
             if self.envelope == True:
-                self.signalgraph[iChan].setYRange(0, vscale[1], padding=0)
+                self.signalgraph[iChan].setYRange(0, adj_scale[1], padding=0)
             else:
-                self.signalgraph[iChan].setYRange(vscale[0], vscale[1], padding=0)
+                self.signalgraph[iChan].setYRange(adj_scale[0], adj_scale[1], padding=0)
+
+            self.signalgraph[iChan].setLabel('left', amp_label)
 
         self.count          = 0
 
@@ -406,7 +426,7 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             self.aPB        = self.proc.a_theta
 
 
-    def yrange_selection(self, choice):
+    def yrange_selection(self, choice, title, custom_input):
         choice              = int(choice)
         if choice == 100:
             print('Vertical range set to -100 uV to +100 uV')
@@ -423,6 +443,20 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         elif choice == 0:
             print('Vertical range set relative to signal')
             self.yrange     = (-0, 0)
+        title.setText('Vertical range (uV)')
+        custom_input.setText(str(self.yrange[1]))
+
+
+    def custom_yrange(self, choice, radio_buttons, title):
+
+        try: 
+            choice              = abs(int(choice))
+            self.yrange         = (-choice, choice)
+            title.setText('Vertical range (uV)')
+            print('Vertical range set to -{} uV to +{} uV'.format(choice, choice))
+        except:
+            title.setText("Set an integer number")
+            print("You have to chose a positive integer number")
 
 
     def disp_envelope(self, choice):

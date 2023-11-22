@@ -50,7 +50,7 @@ class GUIWidgets():
         # rbt1 (Auto) rdbt2 (100) rdbt3 (200) rdbt4 (500) rdbt5 (1000)
         # -----------------------------------------------------------------
 
-        vertranges          = [0, 200, 500, 1000] # 0 is auto scaling
+        vertranges          = [0, 200, 500, 1000, "custom"] # 0 is auto scaling
 
         self.vert_range     = QtWidgets.QWidget()
         vertlayout          = QtWidgets.QVBoxLayout()
@@ -60,9 +60,11 @@ class GUIWidgets():
         rbtn2               = QtWidgets.QRadioButton(str(vertranges[1]))
         rbtn3               = QtWidgets.QRadioButton(str(vertranges[2]))
         rbtn4               = QtWidgets.QRadioButton(str(vertranges[3]))
+        rbtn5               = QtWidgets.QRadioButton(str(vertranges[4]))
         self.range_input    = QtWidgets.QLineEdit(str(self.yrange[1]))
         self.range_input.setGeometry(0, 0, 50, self.range_input.geometry().width())
-        self.range_input.setFixedWidth(50)
+        self.range_input.setFixedWidth(75)
+        self.range_input.setDisabled(True)
         
         if self.yrange[1] == vertranges[0]:
             rbtn1.setChecked(True)
@@ -72,11 +74,15 @@ class GUIWidgets():
             rbtn3.setChecked(True)
         elif self.yrange[1] == vertranges[3]:
             rbtn4.setChecked(True)
+        else:
+            rbtn5.setChecked(True)
+            self.range_input.setEnabled(True)
 
         rbtn1.clicked.connect(lambda: self.yrange_selection(vertranges[0], title, self.range_input))
         rbtn2.clicked.connect(lambda: self.yrange_selection(vertranges[1], title, self.range_input))
         rbtn3.clicked.connect(lambda: self.yrange_selection(vertranges[2], title, self.range_input))
         rbtn4.clicked.connect(lambda: self.yrange_selection(vertranges[3], title, self.range_input))
+        rbtn5.clicked.connect(lambda: self.enable_custom_input(self.range_input))
         self.range_input.returnPressed.connect(lambda: self.custom_yrange(
             self.range_input.text(), [rbtn1, rbtn2, rbtn3, rbtn4], title))
 
@@ -87,6 +93,7 @@ class GUIWidgets():
         horilayout.addWidget(rbtn2)
         horilayout.addWidget(rbtn3)
         horilayout.addWidget(rbtn4)
+        horilayout.addWidget(rbtn5)
         horilayout.addWidget(self.range_input)
         self.vert_range.setLayout(vertlayout)
 
@@ -445,6 +452,11 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             self.yrange     = (-0, 0)
         title.setText('Vertical range (uV)')
         custom_input.setText(str(self.yrange[1]))
+        custom_input.setDisabled(True)
+
+
+    def enable_custom_input(self, custom_input):
+        custom_input.setEnabled(True)
 
 
     def custom_yrange(self, choice, radio_buttons, title):

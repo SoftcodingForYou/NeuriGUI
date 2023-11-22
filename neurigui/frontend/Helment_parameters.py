@@ -16,8 +16,8 @@ class Parameters:
         self.frontend_path  = os.path.dirname(__file__)
 
         self.conf_file      = os.path.join(".", "settings.cfg")
-        self.githubauth     = "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"
-        self.version        = '2.70'
+        self.githubauth     = "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"
+        self.version        = '2.80.1'
         self.ico_helment    = os.path.join(self.frontend_path, "Isotipo-Helment-color.ico")
 
         self.set_defaults() # Necessary to execute first in case user 
@@ -320,9 +320,12 @@ class Parameters:
             latest_release = g.get_repo(repository).get_latest_release()
             v = latest_release.title.replace("V","")
             v = v.replace("v","")
-            ver_latest = float(v)
+            v = v.replace(".", "")
+            ver_latest = int(v)
 
-            if float(self.version) < ver_latest:
+            thisv = int(self.version.replace(".", ""))
+
+            if thisv < ver_latest:
                 customtkinter.CTkLabel(master=frameVersion, 
                 justify=customtkinter.RIGHT,
                 text="".join(["RELEASE VERSION ", str(v), " AVAILABLE"]),

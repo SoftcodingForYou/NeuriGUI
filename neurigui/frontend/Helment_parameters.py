@@ -194,7 +194,7 @@ class Parameters:
 
         #Session-specific parameters
         self.yrange         = [-200, 200] # List of scalars ([negative, positive]) in order to set figure y axis range
-        self.notch          = 0 # Integer 0 (Off), 50 (50 Hz) or 60 (60 Hz)
+        self.notch          = 50 # Integer 0 (Off), 50 (50 Hz) or 60 (60 Hz)
         self.bpass          = 0 # Integer -1 to 3 according to number of options in "frequency_bands" below
         self.dispenv        = False # Boolean 0 (Off), 1 (On)
         self.set_customsession = False

@@ -99,110 +99,115 @@ class Sampling():
             s_per_buffer    = 10
             print('Ordered board to send data via Bluetooth. Switching mode ...')
 
-        # Open communication ----------------------------------------------
         if receiver.port == '':
             raise Exception('Verify that desired connection type (USB or Bluetooth) are indeed available')
-        else:
-            receiver.open()
+
+        with receiver as r:
+
+            # Open communication ----------------------------------------------
             sleep(1)
 
-        receiver.write(bytes(str(parameter.firmfeedback), 'utf-8'))
-        # time.sleep(1)
+            r.flush()
+            r.reset_input_buffer()
+            r.reset_output_buffer()
 
-        board_booting = True
-        print('Board is booting up ...')
-        while board_booting:
-            raw_message = str(receiver.readline())
-            print(raw_message)
-            if 'Listening ...' in raw_message:
-                receiver.write(bytes(str(parameter.firmfeedback), 'utf-8')) # Try again
-                sleep(1)
-            elif '{' in raw_message and '}' in raw_message:
-                print('Fully started')
-                board_booting = False
+            r.write(bytes(str(parameter.firmfeedback), 'utf-8'))
+            # time.sleep(1)
+
+            board_booting = True
+            print('Board is booting up ...')
+            while board_booting:
+                raw_message = str(r.readline())
+                print(raw_message)
+                if 'Listening ...' in raw_message:
+                    r.write(bytes(str(parameter.firmfeedback), 'utf-8')) # Try again
+                    sleep(1)
+                elif '{' in raw_message and '}' in raw_message:
+                    print('Fully started')
+                    board_booting = False
 
 
-        # Prealloate values of loop ---------------------------------------
-        start_time          = int(perf_counter() * 1000)
-        time_stamp_now      = int(perf_counter() * 1000) # Do NOT copy from start_time (will generate pointer)
-        time_reset          = int(perf_counter() * 1000) # Do NOT copy from start_time (will generate pointer)
-        sample_count        = int(0)
-        
-        buffer              = zeros((parameter.max_chans, 
-            (parameter.buffer_length + parameter.buffer_add) * parameter.sample_rate))
-        time_stamps         = zeros(parameter.buffer_length * parameter.sample_rate, dtype=int)
-        pga                 = parameter.PGA
-        s_chans             = parameter.max_chans
-        sampling_rate       = parameter.sample_rate
-        saving_interval     = parameter.saving_interval * parameter.sample_rate
-        update_buffer       = zeros((buffer.shape[0], buffer.shape[1]+1))
-        update_times        = zeros((buffer.shape[1]+1), dtype=int)
-
-        # Preallocate json relay message and relay connection
-        relay_array         = {}
-        relay_array["t"]    = ''
-        for iC in range(s_chans):
-            relay_array["".join(["c", str(iC+1)])] = ''
-        udp_ip              = parameter.udp_ip
-        udp_port            = parameter.udp_port
-
-        for _ in range(1000):
-            receiver.read(receiver.inWaiting())
-            # Eliminate message queue at port, do this several times to get
-            # everything since buffer that we get with inWaiting is limited
+            # Prealloate values of loop ---------------------------------------
+            start_time          = int(perf_counter() * 1000)
+            time_stamp_now      = int(perf_counter() * 1000) # Do NOT copy from start_time (will generate pointer)
+            time_reset          = int(perf_counter() * 1000) # Do NOT copy from start_time (will generate pointer)
+            sample_count        = int(0)
             
-        while not receiver.closed:
-            
-            raw_message             = str(receiver.readline())
+            buffer              = zeros((parameter.max_chans, 
+                (parameter.buffer_length + parameter.buffer_add) * parameter.sample_rate))
+            time_stamps         = zeros(parameter.buffer_length * parameter.sample_rate, dtype=int)
+            pga                 = parameter.PGA
+            s_chans             = parameter.max_chans
+            sampling_rate       = parameter.sample_rate
+            saving_interval     = parameter.saving_interval * parameter.sample_rate
+            update_buffer       = zeros((buffer.shape[0], buffer.shape[1]+1))
+            update_times        = zeros((buffer.shape[1]+1), dtype=int)
 
-            buffer_in, valid_eeg    = self.channel_assignment(raw_message, s_chans)
+            # Preallocate json relay message and relay connection
+            relay_array         = {}
+            relay_array["t"]    = ''
+            for iC in range(s_chans):
+                relay_array["".join(["c", str(iC+1)])] = ''
+            udp_ip              = parameter.udp_ip
+            udp_port            = parameter.udp_port
 
-            if not valid_eeg:
-                # TO-DO: Implement an interpolation system
-                continue
-
-            # Current timestamp -------------------------------------------
-            time_stamp_now          = int(perf_counter() * 1000) - start_time
-            # This will generate unchanged time_stamps for all samples of 
-            # the incoming bufer (= 10 in case of bluetooth), but that is
-            # not a problem
-
-            # Each channel carries self.s_per_buffer amounts of samples 
-            # (theoretically). Since parts of messages can be lost, we 
-            # soft-set the amount of samples after checking for data 
-            # integrity during data_checkpoint()
-            for iS in range(s_per_buffer):
-
-                sample_count        = sample_count + 1
+            for _ in range(1,000):
+                r.read(r.inWaiting())
+                # Eliminate message queue at port, do this several times to get
+                # everything since buffer that we get with inWaiting is limited
                 
-                sample              = buffer_in[:, iS]
+            while not r.closed:
+                
+                raw_message             = str(r.readline())
 
-                # Convert binary to voltage values
-                for iBin in range(s_chans):
-                    sample[iBin]    = self.bin_to_voltage(sample[iBin], pga)
-                    relay_array["".join(["c", str(iBin+1)])] = str(sample[iBin])
+                buffer_in, valid_eeg    = self.channel_assignment(raw_message, s_chans)
 
-                update_buffer       = concatenate((buffer, expand_dims(sample, 1)), axis=1)
-                update_times        = append(time_stamps, time_stamp_now)
+                if not valid_eeg:
+                    # TO-DO: Implement an interpolation system
+                    continue
 
-                # Build new buffer and timestamp arrays
-                buffer              = update_buffer[:, 1:]
-                time_stamps         = update_times[1:]
+                # Current timestamp -------------------------------------------
+                time_stamp_now          = int(perf_counter() * 1000) - start_time
+                # This will generate unchanged time_stamps for all samples of 
+                # the incoming bufer (= 10 in case of bluetooth), but that is
+                # not a problem
 
-                transmitter.sendto(bytes(dumps(relay_array), "utf-8"), (udp_ip, udp_port))
+                # Each channel carries self.s_per_buffer amounts of samples 
+                # (theoretically). Since parts of messages can be lost, we 
+                # soft-set the amount of samples after checking for data 
+                # integrity during data_checkpoint()
+                for iS in range(s_per_buffer):
 
-                pipe_conn.send((buffer, time_stamp_now))
+                    sample_count        = sample_count + 1
+                    
+                    sample              = buffer_in[:, iS]
 
-                # Write out samples to file -----------------------------------
-                if sample_count == saving_interval:
+                    # Convert binary to voltage values
+                    for iBin in range(s_chans):
+                        sample[iBin]    = self.bin_to_voltage(sample[iBin], pga)
+                        relay_array["".join(["c", str(iBin+1)])] = str(sample[iBin])
 
-                    self.calc_sample_rate(time_stamp_now, time_reset, 
-                                          sampling_rate, time_stamps)
+                    update_buffer       = concatenate((buffer, expand_dims(sample, 1)), axis=1)
+                    update_times        = append(time_stamps, time_stamp_now)
 
-                    self.master_write_data(buffer, time_stamps, 
-                        saving_interval, self.output_file)
-                    sample_count        = 0
-                    time_reset          = time_stamp_now
+                    # Build new buffer and timestamp arrays
+                    buffer              = update_buffer[:, 1:]
+                    time_stamps         = update_times[1:]
+
+                    transmitter.sendto(bytes(dumps(relay_array), "utf-8"), (udp_ip, udp_port))
+
+                    pipe_conn.send((buffer, time_stamp_now))
+
+                    # Write out samples to file -----------------------------------
+                    if sample_count == saving_interval:
+
+                        self.calc_sample_rate(time_stamp_now, time_reset, 
+                                            sampling_rate, time_stamps)
+
+                        self.master_write_data(buffer, time_stamps, 
+                            saving_interval, self.output_file)
+                        sample_count        = 0
+                        time_reset          = time_stamp_now
 
 
     def headless_sampling(self, recv_conn):

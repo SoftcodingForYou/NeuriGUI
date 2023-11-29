@@ -628,7 +628,7 @@ class Parameters:
 
     def display_speed_up(self, master):
 
-        gains = ['2', '5', '10', '20', '30', '50']
+        gains = ['2', '5', '10', '20', '30', '50'] # TO-DO: Fix GUI freezing when chosing '1' (no downsampling)
         idx_def = [i for i in range(len(gains)) if int(gains[i]) == self.s_down]
 
         labelSpeed = customtkinter.CTkLabel(master=master, 

@@ -19,8 +19,9 @@ else:
     from .frontend.Helment_user_experience      import Aux
     from .frontend.Helment_parameters           import Parameters
 
-from multiprocessing                            import Process, Pipe
+from multiprocessing                            import Process, Array, Value
 from PyQt5                                      import QtCore, QtWidgets
+from numpy                                      import zeros
 import sys  # We need sys so that we can pass argv to QApplication
 
 
@@ -53,13 +54,14 @@ class MainWindow(QtWidgets.QMainWindow):
         sampl               = Sampling(pm)        # Signal handling
         # auxgui.report_progress(splash, pb, 5)
 
-        # Generate variable exchange pipe
+        # Generate variable exchange variables (shared memory allocations)
         # -----------------------------------------------------------------
-        self.recv_conn, self.send_conn = Pipe(duplex = False)
+        shared_buffer                   = Array(
+            'd', zeros(( (pm.buffer_length + pm.buffer_add) * pm.sample_rate * pm.max_chans)))
+        shared_timestamp                = Value('i', 0)
 
         # Generate separate processes to not slow down sampling by any
-        # other executions (CAREFUL: Pipe() is blocking. We take care of 
-        # that with a buffer-emptying function later)
+        # other executions
         # -----------------------------------------------------------------
 
         # Here, we can not just parse "pm" as it contains non-pickable tk 
@@ -70,7 +72,7 @@ class MainWindow(QtWidgets.QMainWindow):
             pm.sample_rate, pm.PGA, pm.saving_interval, pm.udp_ip,
             pm.udp_port)
         self.sampling    = Process(target=sampl.fetch_sample,
-            args=(self.send_conn, confboard.ser, pm.send_sock, strpm))
+            args=(confboard.ser, pm.send_sock, strpm, shared_buffer, shared_timestamp))
 
         # Build GUI
         # -----------------------------------------------------------------
@@ -127,7 +129,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.central_widget.setLayout(vertlayout) # Draw elements in main widget
 
             # Prepare buffer-emptying function
-            self.timer.timeout.connect(lambda: sampl.headless_sampling(self.recv_conn))
+            self.timer.timeout.connect(lambda: sampl.headless_sampling(self.var_queue, shared_buffer, shared_timestamp))
 
         else:
             
@@ -145,10 +147,10 @@ class MainWindow(QtWidgets.QMainWindow):
             
             # Prepare data visualization
             self.timer.timeout.connect(lambda: guiwidgets.update_signal_plot(
-                self.recv_conn, pm.s_down, int(pm.sample_rate * pm.buffer_add),
+                pm.s_down, int(pm.sample_rate * pm.buffer_add),
                 pm.sample_rate,
-                range(0, int(pm.sample_rate * pm.buffer_length), pm.s_down),
-                [i for i in range(pm.max_chans) if pm.selected_chans[i]]))
+                range(0, int(pm.sample_rate * pm.buffer_length), pm.s_down), pm.max_chans,
+                [i for i in range(pm.max_chans) if pm.selected_chans[i]], shared_buffer, shared_timestamp))
 
         # Splash screen needs to be closed before timer start
         # auxgui.report_progress(splash, pb, 19)
@@ -164,8 +166,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_closing(self):
         self.timer.stop()
         self.sampling.terminate()
-        self.recv_conn.close()
-        self.send_conn.close()
 
 
 class StreamingParameter(object):

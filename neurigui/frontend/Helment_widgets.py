@@ -320,17 +320,20 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         return self.signal
 
 
-    def update_signal_plot(self, recv_conn, s_down, left_edge,
-                           sampling_rate, idx_retain, displ_chans):
-
-        # Update plots for every channel
-        # -----------------------------------------------------------------
-        buffer, t_now   = recv_conn.recv()
-
+    def update_signal_plot(self, s_down, left_edge, sampling_rate,
+                           idx_retain, max_chans, displ_chans,
+                           shared_buffer, shared_timestamp):
+        
         self.count = self.count + 1
         if self.count < s_down:
             return
 
+        # Reconstruct buffer
+        # -----------------------------------------------------------------
+        # sharedbuffer is a 1D array where channels are concatenated. We
+        # split them up into 2D arrays again
+        buffer = reshape(shared_buffer[:], (max_chans, int(len(shared_buffer)/max_chans)))
+                
         # Filter buffer signal and send filtered data to plotting funcs
         # -------------------------------------------------------------
         processed_buffer    = self.prepare_buffer(buffer, 
@@ -340,8 +343,11 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         if self.envelope == True:
             processed_buffer = self.extract_envelope(processed_buffer)
 
-        self.x          = self.x[1:]  # Remove the first y element
-        self.x.append(self.x[-1]+self.count/sampling_rate) # t_now/1000
+        x_current           = shared_timestamp.value / 1000
+        x_first             = x_current - len(self.x) * s_down / sampling_rate
+        self.x              = list(range(round(x_first*1000), round(x_current*1000), int(1000/sampling_rate*s_down)))
+        self.x              = [i / 1000 for i in self.x]
+
 
         if self.streaming == True:
             self.xplot      = self.x

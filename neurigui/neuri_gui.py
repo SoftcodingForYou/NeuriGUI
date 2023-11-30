@@ -57,8 +57,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # Generate variable exchange variables (shared memory allocations)
         # -----------------------------------------------------------------
         shared_buffer                   = Array(
-            'd', zeros(( (pm.buffer_length + pm.buffer_add) * pm.sample_rate * pm.max_chans)))
+            'd', zeros(( 
+                (pm.buffer_length + pm.buffer_add) * pm.sample_rate * pm.max_chans
+                )), lock = True)
         shared_timestamp                = Value('i', 0)
+        self.gui_running                = Value('i', 1)
 
         # Generate separate processes to not slow down sampling by any
         # other executions
@@ -71,8 +74,10 @@ class MainWindow(QtWidgets.QMainWindow):
             pm.firmfeedback, pm.max_chans, pm.buffer_add, pm.buffer_length,
             pm.sample_rate, pm.PGA, pm.saving_interval, pm.udp_ip,
             pm.udp_port)
+        self.board_port = confboard.ser
         self.sampling    = Process(target=sampl.fetch_sample,
-            args=(confboard.ser, pm.send_sock, strpm, shared_buffer, shared_timestamp))
+            args=(confboard.ser, pm.send_sock, strpm,
+                  shared_buffer, shared_timestamp, self.gui_running))
 
         # Build GUI
         # -----------------------------------------------------------------
@@ -116,7 +121,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # auxgui.report_progress(splash, pb, 10)
 
         self.timer              = QtCore.QTimer()
-        self.timer.setInterval(0)
+        self.timer.setInterval(20)
         self.timer.singleShot   = False
 
         if pm.run_headless:
@@ -129,7 +134,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.central_widget.setLayout(vertlayout) # Draw elements in main widget
 
             # Prepare buffer-emptying function
-            self.timer.timeout.connect(lambda: sampl.headless_sampling(self.var_queue, shared_buffer, shared_timestamp))
+            self.timer.timeout.connect(lambda: sampl.headless_sampling(shared_buffer, shared_timestamp))
 
         else:
             
@@ -164,6 +169,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
 
     def on_closing(self):
+        self.gui_running.value = 0
         self.timer.stop()
         self.sampling.terminate()
 

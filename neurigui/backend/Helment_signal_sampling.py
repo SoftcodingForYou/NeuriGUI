@@ -90,7 +90,7 @@ class Sampling():
         return eeg_array, eeg_valid
 
 
-    def fetch_sample(self, receiver, transmitter, parameter, shared_buffer, shared_timestamp):
+    def fetch_sample(self, receiver, transmitter, parameter, shared_buffer, shared_timestamp, gui_running):
 
         if parameter.firmfeedback == 2: # USB
             s_per_buffer    = 1
@@ -156,7 +156,7 @@ class Sampling():
                 # Eliminate message queue at port, do this several times to get
                 # everything since buffer that we get with inWaiting is limited
                 
-            while not r.closed:
+            while gui_running.value == 1:
                 
                 raw_message             = str(r.readline())
 
@@ -213,14 +213,16 @@ class Sampling():
                         sample_count        = 0
                         time_reset          = time_stamp_now
 
+            return
 
-    def headless_sampling(self, recv_conn, shared_buffer, shared_timestamp):
+
+    def headless_sampling(self, shared_buffer, shared_timestamp):
         # Python's multiprocessing's Pipe() is sending and receiving data 
         # in blocking mode. That means if a sender is putting data in the 
         # memory buffer, but no consumer is receiving it, the sending of 
         # data is blocked until the buffer is emptied. This here is a 
         # pseudo-sampling function purely designed to empty the buffer.
-        buffer, t_now   = recv_conn.recv()
+        pass
 
 
     def master_write_data(self, eeg_data, time_stamps, saving_interval,

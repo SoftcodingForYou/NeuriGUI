@@ -193,7 +193,7 @@ class Parameters:
         self.run_headless   = False
 
         #Session-specific parameters
-        self.yrange         = [-200, 200] # List of scalars ([negative, positive]) in order to set figure y axis range
+        self.yrange         = [-0, 0] # List of scalars ([negative, positive]) in order to set figure y axis range
         self.notch          = 50 # Integer 0 (Off), 50 (50 Hz) or 60 (60 Hz)
         self.bpass          = 0 # Integer -1 to 3 according to number of options in "frequency_bands" below
         self.dispenv        = False # Boolean 0 (Off), 1 (On)
@@ -238,9 +238,9 @@ class Parameters:
     def build_frontend(self):
 
         self.framePadX          = 20
-        self.framePadY          = 5
+        self.framePadY          = 10
         self.widgetPadX         = 10
-        self.widgetPadY         = 2
+        self.widgetPadY         = 20
         
         # Build GUI
         # -----------------------------------------------------------------
@@ -275,7 +275,7 @@ class Parameters:
         self.display_timerange(self.add_frame_ext_x(frameScroll))
         self.display_channels(self.add_frame_ext_x(frameScroll))
         self.display_output_name(self.add_frame_ext_x(frameScroll))
-        self.display_speed_up(self.add_frame_ext_x(frameScroll))
+        # self.display_speed_up(self.add_frame_ext_x(frameScroll))
         self.display_headless(self.add_frame_ext_x(frameScroll))
         self.display_validate(self.paramWin)
         
@@ -628,25 +628,25 @@ class Parameters:
 
     def display_speed_up(self, master):
 
-        gains = ['2', '5', '10', '20', '30', '50'] # TO-DO: Fix GUI freezing when chosing '1' (no downsampling)
-        idx_def = [i for i in range(len(gains)) if int(gains[i]) == self.s_down]
+        down_facotr = ['1', '2', '5', '10'] # TO-DO: Fix GUI freezing when chosing '1' (no downsampling)
+        idx_def     = [i for i in range(len(down_facotr)) if int(down_facotr[i]) == self.s_down]
 
-        labelSpeed = customtkinter.CTkLabel(master=master, 
+        labelSpeed  = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,
                                             text='Optional: Select downsampling intensity')
         labelSpeed.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
-        SpeedMenu = customtkinter.CTkOptionMenu(master, values=gains,
+        SpeedMenu   = customtkinter.CTkOptionMenu(master, values=down_facotr,
                                                     command=self.select_speed_up)
         SpeedMenu.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
-        SpeedMenu.set(gains[int(idx_def[0])])
+        SpeedMenu.set(down_facotr[int(idx_def[0])])
 
-        infoText = """
+        infoText    = """
             Selecting high amounts of channels and long time ranges to display can have impacts on the performance.
             You might try to compensate this by setting a higher downsampling factor. This will downsample the data
             for visualization (not the recorded data itself)
             """
 
-        labelInfo = customtkinter.CTkLabel(master=master, 
+        labelInfo   = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,
                                             text=infoText)
         labelInfo.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.RIGHT)

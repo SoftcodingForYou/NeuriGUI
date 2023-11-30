@@ -274,7 +274,7 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             self.signalgraph[iChan] = PlotWidget()
 
             # Aesthetics
-            self.signalgraph[iChan].setBackground('w')
+            self.signalgraph[iChan].setBackground((255,255,255, 0))
             self.signalgraph[iChan].setLabel('left', 'A (uV)')
             if iChan == len(displ_chans) -1:
                 self.signalgraph[iChan].setLabel('bottom', '')
@@ -286,7 +286,7 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             
             # Decorate plot
             legend = self.signalgraph[iChan].addLegend(offset=(5, 0))
-            self.signalgraph[iChan].setAntialiasing(False)  # Huge performance gain and 
+            self.signalgraph[iChan].setAntialiasing(True)  # Huge performance gain and 
                                                 # necessary to keep up with 
                                                 # the sampling rate
             self.signalgraph[iChan].setYRange(self.yrange[0], self.yrange[1])
@@ -318,6 +318,16 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         self.signal.setLayout(vertlayout)
 
         return self.signal
+    
+
+    # def frontend_thread(self, s_down, left_edge, sampling_rate,
+    #                        idx_retain, max_chans, displ_chans,
+    #                        shared_buffer, shared_timestamp, gui_running):
+        
+    #     while gui_running.value == 1:
+    #         self.update_signal_plot(s_down, left_edge, sampling_rate,
+    #                        idx_retain, max_chans, displ_chans,
+    #                        shared_buffer, shared_timestamp)
 
 
     def update_signal_plot(self, s_down, left_edge, sampling_rate,
@@ -332,7 +342,7 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         # -----------------------------------------------------------------
         # sharedbuffer is a 1D array where channels are concatenated. We
         # split them up into 2D arrays again
-        buffer = reshape(shared_buffer[:], (max_chans, int(len(shared_buffer)/max_chans)))
+        buffer              = self.rebuild_buffer(shared_buffer[:], max_chans)
                 
         # Filter buffer signal and send filtered data to plotting funcs
         # -------------------------------------------------------------
@@ -345,7 +355,11 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
 
         x_current           = shared_timestamp.value / 1000
         x_first             = x_current - len(self.x) * s_down / sampling_rate
-        self.x              = list(range(round(x_first*1000), round(x_current*1000), int(1000/sampling_rate*s_down)))
+        self.x              = list(
+            range(
+                round(x_first*1000),
+                round(x_current*1000),
+                int(1000/sampling_rate*s_down)))
         self.x              = [i / 1000 for i in self.x]
 
 
@@ -357,7 +371,7 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         down_buffer = processed_buffer[:, idx_retain]
 
         # Set vertical range
-        v_buffer    = reshape(down_buffer, down_buffer.size)
+        v_buffer    = reshape(processed_buffer, processed_buffer.size)
         if self.yrange[1] == 0:
             vscale = [
                 -max([abs(min(v_buffer)), abs(max(v_buffer))]),
@@ -397,6 +411,10 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             self.signalgraph[iChan].setLabel('left', amp_label)
 
         self.count          = 0
+
+
+    def rebuild_buffer(self, buffer_in, num_channels):
+        return reshape(buffer_in, (num_channels, int(len(buffer_in)/num_channels)))
 
     
     def filt_noise(self, choice):
@@ -578,7 +596,7 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         self.mainwindow.setPalette(self.lighttheme)
 
         for iChan in range(self.numchans):
-            self.signalgraph[iChan].setBackground((247,247,247))
+            self.signalgraph[iChan].setBackground((247,247,247,0))
             self.penstyle[iChan] = pg.mkPen(color=(49,130,189), width=2)
 
 
@@ -602,5 +620,5 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         self.mainwindow.setPalette(self.darktheme)
 
         for iChan in range(self.numchans):
-            self.signalgraph[iChan].setBackground((37,37,37))
+            self.signalgraph[iChan].setBackground((53, 53, 53,0))
             self.penstyle[iChan] = pg.mkPen(color=(222,235,247), width=2)

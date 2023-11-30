@@ -36,6 +36,9 @@ class GUIWidgets():
 
         self.proc           = processing
 
+        self.fps_update_timestamp= 1000 # Setting this to 0 will throw ZeroDivisionError
+        self.plot_updates   = 0 # Used as frames per second
+
 
     def initiate_theme(self):
         if self.darkmode:
@@ -274,7 +277,7 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             self.signalgraph[iChan] = PlotWidget()
 
             # Aesthetics
-            self.signalgraph[iChan].setBackground('w')
+            self.signalgraph[iChan].setBackground((255,255,255, 0))
             self.signalgraph[iChan].setLabel('left', 'A (uV)')
             if iChan == len(displ_chans) -1:
                 self.signalgraph[iChan].setLabel('bottom', '')
@@ -286,7 +289,7 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             
             # Decorate plot
             legend = self.signalgraph[iChan].addLegend(offset=(5, 0))
-            self.signalgraph[iChan].setAntialiasing(False)  # Huge performance gain and 
+            self.signalgraph[iChan].setAntialiasing(True)  # Huge performance gain and 
                                                 # necessary to keep up with 
                                                 # the sampling rate
             self.signalgraph[iChan].setYRange(self.yrange[0], self.yrange[1])
@@ -318,19 +321,39 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         self.signal.setLayout(vertlayout)
 
         return self.signal
+    
+
+    # def frontend_thread(self, s_down, left_edge, sampling_rate,
+    #                        idx_retain, max_chans, displ_chans,
+    #                        shared_buffer, shared_timestamp, gui_running):
+        
+    #     while gui_running.value == 1:
+    #         self.update_signal_plot(s_down, left_edge, sampling_rate,
+    #                        idx_retain, max_chans, displ_chans,
+    #                        shared_buffer, shared_timestamp)
 
 
-    def update_signal_plot(self, recv_conn, s_down, left_edge,
-                           sampling_rate, idx_retain, displ_chans):
+    def update_fps(self):
+        self.fps_info.setText(" FPS \n{}".format(self.plot_updates))
+        # White spaces to avoid widget resizing when number of digits change
 
-        # Update plots for every channel
-        # -----------------------------------------------------------------
-        buffer, t_now   = recv_conn.recv()
 
+    def update_signal_plot(self, s_down, left_edge, sampling_rate,
+                           idx_retain, max_chans, displ_chans,
+                           shared_buffer, shared_timestamp):
+        
+        self.plot_updates += 1
+                
         self.count = self.count + 1
         if self.count < s_down:
             return
 
+        # Reconstruct buffer
+        # -----------------------------------------------------------------
+        # sharedbuffer is a 1D array where channels are concatenated. We
+        # split them up into 2D arrays again
+        buffer              = self.rebuild_buffer(shared_buffer[:], max_chans)
+                
         # Filter buffer signal and send filtered data to plotting funcs
         # -------------------------------------------------------------
         processed_buffer    = self.prepare_buffer(buffer, 
@@ -340,8 +363,15 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         if self.envelope == True:
             processed_buffer = self.extract_envelope(processed_buffer)
 
-        self.x          = self.x[1:]  # Remove the first y element
-        self.x.append(self.x[-1]+self.count/sampling_rate) # t_now/1000
+        x_current           = shared_timestamp.value / 1000
+        x_first             = x_current - len(self.x) * s_down / sampling_rate
+        self.x              = list(
+            range(
+                round(x_first*1000),
+                round(x_current*1000),
+                int(1000/sampling_rate*s_down)))
+        self.x              = [i / 1000 for i in self.x]
+
 
         if self.streaming == True:
             self.xplot      = self.x
@@ -351,7 +381,7 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         down_buffer = processed_buffer[:, idx_retain]
 
         # Set vertical range
-        v_buffer    = reshape(down_buffer, down_buffer.size)
+        v_buffer    = reshape(processed_buffer, processed_buffer.size)
         if self.yrange[1] == 0:
             vscale = [
                 -max([abs(min(v_buffer)), abs(max(v_buffer))]),
@@ -391,6 +421,15 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             self.signalgraph[iChan].setLabel('left', amp_label)
 
         self.count          = 0
+
+        if self.fps_update_timestamp + 1000 < shared_timestamp.value:
+            self.update_fps()
+            self.plot_updates = 0
+            self.fps_update_timestamp = shared_timestamp.value
+
+
+    def rebuild_buffer(self, buffer_in, num_channels):
+        return reshape(buffer_in, (num_channels, int(len(buffer_in)/num_channels)))
 
     
     def filt_noise(self, choice):
@@ -505,6 +544,17 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             print('Enabled dark theme')
 
 
+    def display_fps(self):
+        fps_display         = QtWidgets.QWidget()
+        vertlayout          = QtWidgets.QVBoxLayout()
+        self.fps_info       = QtWidgets.QLabel(" FPS \n{}".format(self.plot_updates))
+        self.fps_info.setAlignment(QtCore.Qt.AlignCenter)
+        vertlayout.addWidget(self.fps_info)
+        fps_display.setLayout(vertlayout)
+
+        return fps_display
+
+
     def save_parameters(self):
 
         end_line        = "\n"
@@ -572,7 +622,7 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         self.mainwindow.setPalette(self.lighttheme)
 
         for iChan in range(self.numchans):
-            self.signalgraph[iChan].setBackground((247,247,247))
+            self.signalgraph[iChan].setBackground((247,247,247,0))
             self.penstyle[iChan] = pg.mkPen(color=(49,130,189), width=2)
 
 
@@ -596,5 +646,5 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         self.mainwindow.setPalette(self.darktheme)
 
         for iChan in range(self.numchans):
-            self.signalgraph[iChan].setBackground((37,37,37))
+            self.signalgraph[iChan].setBackground((53, 53, 53,0))
             self.penstyle[iChan] = pg.mkPen(color=(222,235,247), width=2)

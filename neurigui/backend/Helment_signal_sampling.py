@@ -1,7 +1,7 @@
 from json import loads, dumps, decoder
 from time import sleep, perf_counter
 #import random
-from numpy import expand_dims, concatenate, fromiter, append, array, zeros
+from numpy import expand_dims, concatenate, fromiter, append, array, zeros, reshape
 from threading                          import Thread
 from datetime                           import datetime
 
@@ -90,7 +90,7 @@ class Sampling():
         return eeg_array, eeg_valid
 
 
-    def fetch_sample(self, pipe_conn, receiver, transmitter, parameter):
+    def fetch_sample(self, receiver, transmitter, parameter, shared_buffer, shared_timestamp, gui_running):
 
         if parameter.firmfeedback == 2: # USB
             s_per_buffer    = 1
@@ -107,6 +107,8 @@ class Sampling():
             # Open communication ----------------------------------------------
             sleep(1)
 
+            # TO-DO: These functions below do not empty the buffer at the 
+            # port as they are supposed to do
             r.flush()
             r.reset_input_buffer()
             r.reset_output_buffer()
@@ -156,7 +158,7 @@ class Sampling():
                 # Eliminate message queue at port, do this several times to get
                 # everything since buffer that we get with inWaiting is limited
                 
-            while not r.closed:
+            while gui_running.value == 1:
                 
                 raw_message             = str(r.readline())
 
@@ -194,9 +196,13 @@ class Sampling():
                     buffer              = update_buffer[:, 1:]
                     time_stamps         = update_times[1:]
 
+                    # Make data available for downstream programs
                     transmitter.sendto(bytes(dumps(relay_array), "utf-8"), (udp_ip, udp_port))
 
-                    pipe_conn.send((buffer, time_stamp_now))
+                    # Update shared memory allocations for frontend
+                    shared_buffer[:] = reshape(buffer, buffer.size) # Has left edge for filtering
+                    shared_timestamp.value = time_stamp_now
+                    # pipe_conn.put((buffer, time_stamp_now))
 
                     # Write out samples to file -----------------------------------
                     if sample_count == saving_interval:
@@ -209,14 +215,18 @@ class Sampling():
                         sample_count        = 0
                         time_reset          = time_stamp_now
 
+            r.write(bytes(str(0), 'utf-8')) # Set board into standby
+            sleep(1)
+            return
 
-    def headless_sampling(self, recv_conn):
+
+    def headless_sampling(self, shared_buffer, shared_timestamp):
         # Python's multiprocessing's Pipe() is sending and receiving data 
         # in blocking mode. That means if a sender is putting data in the 
         # memory buffer, but no consumer is receiving it, the sending of 
         # data is blocked until the buffer is emptied. This here is a 
         # pseudo-sampling function purely designed to empty the buffer.
-        buffer, t_now   = recv_conn.recv()
+        pass
 
 
     def master_write_data(self, eeg_data, time_stamps, saving_interval,

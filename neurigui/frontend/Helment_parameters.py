@@ -6,6 +6,7 @@ import serial.tools.list_ports
 import customtkinter
 import os
 import socket
+import webbrowser
 
 class Parameters:
 
@@ -17,7 +18,7 @@ class Parameters:
 
         self.conf_file      = os.path.join(".", "settings.cfg")
         self.githubauth     = "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"
-        self.version        = '2.80.1'
+        self.version        = '2.80.2' # TO-DO: Find a more elegant way to dynamically define the current version as this line here gets forgotten a lot
         self.ico_helment    = os.path.join(self.frontend_path, "Isotipo-Helment-color.ico")
 
         self.set_defaults() # Necessary to execute first in case user 
@@ -193,7 +194,7 @@ class Parameters:
         self.run_headless   = False
 
         #Session-specific parameters
-        self.yrange         = [-200, 200] # List of scalars ([negative, positive]) in order to set figure y axis range
+        self.yrange         = [-0, 0] # List of scalars ([negative, positive]) in order to set figure y axis range
         self.notch          = 50 # Integer 0 (Off), 50 (50 Hz) or 60 (60 Hz)
         self.bpass          = 0 # Integer -1 to 3 according to number of options in "frequency_bands" below
         self.dispenv        = False # Boolean 0 (Off), 1 (On)
@@ -222,7 +223,7 @@ class Parameters:
 
         #Plotting
         # self.plot_intv       = 200 #scalar defining update rate of figure (ms) OBSOLETE PARAMETER
-        self.s_down         = 5 #Desired downsampling factor (buffer_length*sample_rate/s_down must be convertable to integer)
+        self.s_down         = 1 #Desired downsampling factor (buffer_length*sample_rate/s_down must be convertable to integer)
 
 
         #Signal processing
@@ -238,9 +239,9 @@ class Parameters:
     def build_frontend(self):
 
         self.framePadX          = 20
-        self.framePadY          = 5
+        self.framePadY          = 10
         self.widgetPadX         = 10
-        self.widgetPadY         = 2
+        self.widgetPadY         = 20
         
         # Build GUI
         # -----------------------------------------------------------------
@@ -275,7 +276,7 @@ class Parameters:
         self.display_timerange(self.add_frame_ext_x(frameScroll))
         self.display_channels(self.add_frame_ext_x(frameScroll))
         self.display_output_name(self.add_frame_ext_x(frameScroll))
-        self.display_speed_up(self.add_frame_ext_x(frameScroll))
+        # self.display_speed_up(self.add_frame_ext_x(frameScroll))
         self.display_headless(self.add_frame_ext_x(frameScroll))
         self.display_validate(self.paramWin)
         
@@ -293,14 +294,16 @@ class Parameters:
 
     def add_frame_ext_x(self, master):
         frameMain               = customtkinter.CTkFrame(master=master)
-        frameMain.pack(pady=self.framePadY, padx=self.framePadX, fill="both", expand=True)
+        frameMain.pack(pady=self.framePadY, padx=self.framePadX,
+                       fill="both", expand=True)
         return frameMain
 
 
     def add_scrollable_frame(self, master):
-        frameScroll             = customtkinter.CTkScrollableFrame(master=master,
-            bg_color="transparent", fg_color="transparent")
-        frameScroll.pack(pady=self.framePadY, padx=self.framePadX, fill="both", expand=True)
+        frameScroll             = customtkinter.CTkScrollableFrame(
+            master=master, bg_color="transparent", fg_color="transparent")
+        frameScroll.pack(pady=self.framePadY, padx=self.framePadX,
+                         fill="both", expand=True)
         return frameScroll
     
 
@@ -308,13 +311,14 @@ class Parameters:
 
         frameVersion             = customtkinter.CTkFrame(
             master=master, bg_color="transparent", fg_color="transparent")
-        frameVersion.pack(pady=0, padx=self.framePadX, fill=tk.X, expand=False, side=tk.TOP)
+        frameVersion.pack(pady=0, padx=self.framePadX, fill=tk.X,
+                          expand=False, side=tk.TOP)
 
         rawtoken = self.githubauth
         repository = "Helment/NeuriGUI"
 
         token = os.getenv('GITHUB_TOKEN', rawtoken)
-        g = Github(token)
+        g = Github()
         
         try:
             latest_release = g.get_repo(repository).get_latest_release()
@@ -326,18 +330,36 @@ class Parameters:
             thisv = int(self.version.replace(".", ""))
 
             if thisv < ver_latest:
+
+                target_webpage = "https://github.com/Helment/NeuriGUI/releases/tag/{}".format(latest_release.title)
+
+                button = customtkinter.CTkButton(
+                    frameVersion, text="Download latest version",
+                    command=lambda: self.open_webpage(target_webpage))
+                button.pack(
+                        pady=self.widgetPadY, padx=self.widgetPadX,
+                        fill=tk.BOTH, expand=False, side=tk.RIGHT)
+                
                 customtkinter.CTkLabel(master=frameVersion, 
                 justify=customtkinter.RIGHT,
-                text="".join(["RELEASE VERSION ", str(v), " AVAILABLE"]),
+                text="".join(["Realease version ",
+                              str(latest_release.title.replace("V","")),
+                              " available"]),
                 text_color='red').pack(
-                    pady=0, padx=15, fill=tk.BOTH, expand=False, side=tk.RIGHT)
+                    pady=self.widgetPadY, padx=self.widgetPadX,
+                    fill=tk.BOTH, expand=False, side=tk.RIGHT)
         except:
             pass
 
         customtkinter.CTkLabel(master=frameVersion, 
             justify=customtkinter.RIGHT,
             text="".join(["GUI version: ", self.version])).pack(
-                pady=0, padx=0, fill=tk.BOTH, expand=False, side=tk.RIGHT)
+                pady=self.widgetPadY, padx=self.widgetPadX,
+                fill=tk.BOTH, expand=False, side=tk.RIGHT)
+        
+
+    def open_webpage(self, target):
+        webbrowser.open(target)
         
     
     def get_screen_info(self):
@@ -628,25 +650,25 @@ class Parameters:
 
     def display_speed_up(self, master):
 
-        gains = ['2', '5', '10', '20', '30', '50']
-        idx_def = [i for i in range(len(gains)) if int(gains[i]) == self.s_down]
+        down_facotr = ['1', '2', '5', '10'] # TO-DO: Fix GUI freezing when chosing '1' (no downsampling)
+        idx_def     = [i for i in range(len(down_facotr)) if int(down_facotr[i]) == self.s_down]
 
-        labelSpeed = customtkinter.CTkLabel(master=master, 
+        labelSpeed  = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,
                                             text='Optional: Select downsampling intensity')
         labelSpeed.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
-        SpeedMenu = customtkinter.CTkOptionMenu(master, values=gains,
+        SpeedMenu   = customtkinter.CTkOptionMenu(master, values=down_facotr,
                                                     command=self.select_speed_up)
         SpeedMenu.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
-        SpeedMenu.set(gains[int(idx_def[0])])
+        SpeedMenu.set(down_facotr[int(idx_def[0])])
 
-        infoText = """
+        infoText    = """
             Selecting high amounts of channels and long time ranges to display can have impacts on the performance.
             You might try to compensate this by setting a higher downsampling factor. This will downsample the data
             for visualization (not the recorded data itself)
             """
 
-        labelInfo = customtkinter.CTkLabel(master=master, 
+        labelInfo   = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,
                                             text=infoText)
         labelInfo.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.RIGHT)

@@ -36,6 +36,9 @@ class GUIWidgets():
 
         self.proc           = processing
 
+        self.fps_update_timestamp= 1000 # Setting this to 0 will throw ZeroDivisionError
+        self.plot_updates   = 0 # Used as frames per second
+
 
     def initiate_theme(self):
         if self.darkmode:
@@ -330,10 +333,17 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
     #                        shared_buffer, shared_timestamp)
 
 
+    def update_fps(self):
+        self.fps_info.setText(" FPS \n{}".format(self.plot_updates))
+        # White spaces to avoid widget resizing when number of digits change
+
+
     def update_signal_plot(self, s_down, left_edge, sampling_rate,
                            idx_retain, max_chans, displ_chans,
                            shared_buffer, shared_timestamp):
         
+        self.plot_updates += 1
+                
         self.count = self.count + 1
         if self.count < s_down:
             return
@@ -411,6 +421,11 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             self.signalgraph[iChan].setLabel('left', amp_label)
 
         self.count          = 0
+
+        if self.fps_update_timestamp + 1000 < shared_timestamp.value:
+            self.update_fps()
+            self.plot_updates = 0
+            self.fps_update_timestamp = shared_timestamp.value
 
 
     def rebuild_buffer(self, buffer_in, num_channels):
@@ -527,6 +542,17 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             self.darkmode = True
             self.save_parameters()
             print('Enabled dark theme')
+
+
+    def display_fps(self):
+        fps_display         = QtWidgets.QWidget()
+        vertlayout          = QtWidgets.QVBoxLayout()
+        self.fps_info       = QtWidgets.QLabel(" FPS \n{}".format(self.plot_updates))
+        self.fps_info.setAlignment(QtCore.Qt.AlignCenter)
+        vertlayout.addWidget(self.fps_info)
+        fps_display.setLayout(vertlayout)
+
+        return fps_display
 
 
     def save_parameters(self):

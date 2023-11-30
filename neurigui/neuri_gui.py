@@ -22,6 +22,7 @@ else:
 from multiprocessing                            import Process, Array, Value
 from PyQt5                                      import QtCore, QtWidgets
 from numpy                                      import zeros
+from time                                       import sleep
 import sys  # We need sys so that we can pass argv to QApplication
 
 
@@ -106,6 +107,7 @@ class MainWindow(QtWidgets.QMainWindow):
         widget_envelope     = guiwidgets.fg_envelope()
         widget_sbtn         = guiwidgets.fg_stream_button()
         widget_darkmode     = guiwidgets.fg_theme_button()
+        widget_fps          = guiwidgets.display_fps()
         widget_signal       = guiwidgets.fg_signal_stream(
             int(pm.sample_rate * pm.buffer_length), pm.s_down,
             [i for i in range(pm.max_chans) if pm.selected_chans[i]],
@@ -121,7 +123,14 @@ class MainWindow(QtWidgets.QMainWindow):
         # auxgui.report_progress(splash, pb, 10)
 
         self.timer              = QtCore.QTimer()
-        self.timer.setInterval(20)
+        self.timer.setInterval(20)  # This can be set to 0 as well for
+                                    # fastest plotting calls possible but
+                                    # the GUI currently freezes in those
+                                    # conditions and I have not figured out
+                                    # how to use QThreads accordingly
+                                    # (window does not get updated if 
+                                    # update plot functions are inside
+                                    # QThread)
         self.timer.singleShot   = False
 
         if pm.run_headless:
@@ -148,6 +157,7 @@ class MainWindow(QtWidgets.QMainWindow):
             controlpanel.addWidget(widget_envelope)
             controlpanel.addWidget(widget_sbtn)
             controlpanel.addWidget(widget_darkmode)
+            controlpanel.addWidget(widget_fps)
             vertlayout.addWidget(widget_signal)
             
             # Prepare data visualization
@@ -170,6 +180,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def on_closing(self):
         self.gui_running.value = 0
+        sleep(2) # A second longer than the sampling thread
         self.timer.stop()
         self.sampling.terminate()
 

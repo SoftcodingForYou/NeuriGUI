@@ -6,6 +6,7 @@ import serial.tools.list_ports
 import customtkinter
 import os
 import socket
+import webbrowser
 
 class Parameters:
 
@@ -17,7 +18,7 @@ class Parameters:
 
         self.conf_file      = os.path.join(".", "settings.cfg")
         self.githubauth     = "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"
-        self.version        = '2.80.1'
+        self.version        = '2.80.2' # TO-DO: Find a more elegant way to dynamically define the current version as this line here gets forgotten a lot
         self.ico_helment    = os.path.join(self.frontend_path, "Isotipo-Helment-color.ico")
 
         self.set_defaults() # Necessary to execute first in case user 
@@ -222,7 +223,7 @@ class Parameters:
 
         #Plotting
         # self.plot_intv       = 200 #scalar defining update rate of figure (ms) OBSOLETE PARAMETER
-        self.s_down         = 5 #Desired downsampling factor (buffer_length*sample_rate/s_down must be convertable to integer)
+        self.s_down         = 1 #Desired downsampling factor (buffer_length*sample_rate/s_down must be convertable to integer)
 
 
         #Signal processing
@@ -293,14 +294,16 @@ class Parameters:
 
     def add_frame_ext_x(self, master):
         frameMain               = customtkinter.CTkFrame(master=master)
-        frameMain.pack(pady=self.framePadY, padx=self.framePadX, fill="both", expand=True)
+        frameMain.pack(pady=self.framePadY, padx=self.framePadX,
+                       fill="both", expand=True)
         return frameMain
 
 
     def add_scrollable_frame(self, master):
-        frameScroll             = customtkinter.CTkScrollableFrame(master=master,
-            bg_color="transparent", fg_color="transparent")
-        frameScroll.pack(pady=self.framePadY, padx=self.framePadX, fill="both", expand=True)
+        frameScroll             = customtkinter.CTkScrollableFrame(
+            master=master, bg_color="transparent", fg_color="transparent")
+        frameScroll.pack(pady=self.framePadY, padx=self.framePadX,
+                         fill="both", expand=True)
         return frameScroll
     
 
@@ -308,13 +311,14 @@ class Parameters:
 
         frameVersion             = customtkinter.CTkFrame(
             master=master, bg_color="transparent", fg_color="transparent")
-        frameVersion.pack(pady=0, padx=self.framePadX, fill=tk.X, expand=False, side=tk.TOP)
+        frameVersion.pack(pady=0, padx=self.framePadX, fill=tk.X,
+                          expand=False, side=tk.TOP)
 
         rawtoken = self.githubauth
         repository = "Helment/NeuriGUI"
 
         token = os.getenv('GITHUB_TOKEN', rawtoken)
-        g = Github(token)
+        g = Github()
         
         try:
             latest_release = g.get_repo(repository).get_latest_release()
@@ -326,18 +330,36 @@ class Parameters:
             thisv = int(self.version.replace(".", ""))
 
             if thisv < ver_latest:
+
+                target_webpage = "https://github.com/Helment/NeuriGUI/releases/tag/{}".format(latest_release.title)
+
+                button = customtkinter.CTkButton(
+                    frameVersion, text="Download latest version",
+                    command=lambda: self.open_webpage(target_webpage))
+                button.pack(
+                        pady=self.widgetPadY, padx=self.widgetPadX,
+                        fill=tk.BOTH, expand=False, side=tk.RIGHT)
+                
                 customtkinter.CTkLabel(master=frameVersion, 
                 justify=customtkinter.RIGHT,
-                text="".join(["RELEASE VERSION ", str(v), " AVAILABLE"]),
+                text="".join(["Realease version ",
+                              str(latest_release.title.replace("V","")),
+                              " available"]),
                 text_color='red').pack(
-                    pady=0, padx=15, fill=tk.BOTH, expand=False, side=tk.RIGHT)
+                    pady=self.widgetPadY, padx=self.widgetPadX,
+                    fill=tk.BOTH, expand=False, side=tk.RIGHT)
         except:
             pass
 
         customtkinter.CTkLabel(master=frameVersion, 
             justify=customtkinter.RIGHT,
             text="".join(["GUI version: ", self.version])).pack(
-                pady=0, padx=0, fill=tk.BOTH, expand=False, side=tk.RIGHT)
+                pady=self.widgetPadY, padx=self.widgetPadX,
+                fill=tk.BOTH, expand=False, side=tk.RIGHT)
+        
+
+    def open_webpage(self, target):
+        webbrowser.open(target)
         
     
     def get_screen_info(self):

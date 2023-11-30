@@ -107,6 +107,8 @@ class Sampling():
             # Open communication ----------------------------------------------
             sleep(1)
 
+            # TO-DO: These functions below do not empty the buffer at the 
+            # port as they are supposed to do
             r.flush()
             r.reset_input_buffer()
             r.reset_output_buffer()
@@ -213,6 +215,8 @@ class Sampling():
                         sample_count        = 0
                         time_reset          = time_stamp_now
 
+            r.write(bytes(str(0), 'utf-8')) # Set board into standby
+            sleep(1)
             return
 
 

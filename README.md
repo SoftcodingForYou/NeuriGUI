@@ -7,6 +7,10 @@ Neuri is an EEG board developed by Helment. This GUI is working with Neuri versi
 
 ![Main view of GUI](./neurigui/assets/Neuri_GUI_main_window.png)
 
+Watch the introdction on Youtube:
+
+[![Watch the introdcution](https://img.youtube.com/vi/8DbGR9KUszQ/hqdefault.jpg)](https://www.youtube.com/embed/8DbGR9KUszQ)
+
 ## Setup
 
 The GUI is distributed as a Python program. The GUI should work with **Python versions 3.9 or higher**.

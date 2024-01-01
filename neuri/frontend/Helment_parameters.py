@@ -109,6 +109,13 @@ class Parameters:
                             self.port = ''
                     except:
                         print("Could not load \"Port\" from configuration")
+                elif 'Board' in setting:
+                    try:
+                        self.board          = str(setting[setting.find('=')+1:])
+                        if '\n' in self.board:
+                            self.board = self.board.replace('\n', '')
+                    except:
+                        print("Could not get board information from configuration")
                 elif 'DownsamplingFactor' in setting:
                     try:
                         self.s_down         = int(setting[setting.find('=')+1:])
@@ -135,6 +142,7 @@ class Parameters:
                     "".join(["TimeRange=", str(self.buffer_length), end_line]),
                     "".join(["PGA=", str(self.PGA), end_line]),
                     "".join(["Port=", str(self.port), end_line]),
+                    "".join(["Board=", str(self.board), end_line]),
                     "".join(["DownsamplingFactor=", str(self.s_down), end_line]),
                     "".join(["Headless=", str(self.run_headless), end_line])
                     ]
@@ -160,6 +168,8 @@ class Parameters:
                         settings[i]             = "".join(["PGA=", str(self.PGA), end_line])
                     elif 'Port' in setting:
                         settings[i]             = "".join(["Port=", str(self.port), end_line])
+                    elif 'Board' in setting:
+                        settings[i]             = "".join(["Board=", str(self.board), end_line])
                     elif 'DownsamplingFactor' in setting:
                         settings[i]             = "".join(["DownsamplingFactor=", str(self.s_down), end_line])
                     elif 'Headless' in setting:
@@ -178,6 +188,8 @@ class Parameters:
                     new_settings.append("".join(["PGA=", str(self.PGA), end_line]))
                 if len([s for s in settings if "Port" in s]) == 0:
                     new_settings.append("".join(["Port=", str(self.port), end_line]))
+                if len([s for s in settings if "Board" in s]) == 0:
+                    new_settings.append("".join(["Board=", str(self.board), end_line]))
                 if len([s for s in settings if "DownsamplingFactor" in s]) == 0:
                     new_settings.append("".join(["DownsamplingFactor=", str(self.s_down), end_line]))
                 if len([s for s in settings if "Headless" in s]) == 0:
@@ -212,6 +224,7 @@ class Parameters:
         #Signal reception
         self.baud_rate      = 115200 #scalar default baudrate for connection
         self.port           = '' #Leave blank
+        self.board          = '' #Leave blank
         self.protocols      = {}
         self.protocols["USB"]= 2
         self.protocols["BT"]= 3
@@ -269,6 +282,7 @@ class Parameters:
 
         # Elements to place into srollable frame
         frameScroll = self.add_scrollable_frame(self.paramWin)
+        self.display_board_version(self.add_frame_ext_x(frameScroll))
         self.display_ports(self.add_frame_ext_x(frameScroll))
         self.display_protocol(self.add_frame_ext_x(frameScroll))
         self.display_gains(self.add_frame_ext_x(frameScroll))
@@ -369,6 +383,37 @@ class Parameters:
         self.screen_width = root.winfo_screenwidth()
         self.screen_height = root.winfo_screenheight()
         root.destroy()
+
+    
+    def display_board_version(self, master):
+        
+        boards = ["Neuri V1", "Neuri-Lolin S3-PRO"]
+        if self.board == '': 
+            defaultBoard = boards[0]
+            self.board   = defaultBoard
+        else:
+            defaultBoard = self.board
+
+        labelBoard = customtkinter.CTkLabel(master=master, 
+                                            justify=customtkinter.LEFT,
+                                            text='Select board')
+        labelBoard.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
+        BoardMenu = customtkinter.CTkOptionMenu(master, values=boards,
+                                               command=self.select_board)
+        BoardMenu.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
+        BoardMenu.set(defaultBoard)
+
+
+    def select_board(self, event):
+
+        self.board       = str(event)
+        print('Board set to {}'.format(self.board))
+
+        channel_amount = ['2', '8']
+        if self.board == "Neuri V1":
+            self.select_channel_amount(2)
+        elif "Neuri-Lolin S3-PRO":
+            self.select_channel_amount(8)
 
 
     def display_ports(self, master):
@@ -539,13 +584,6 @@ class Parameters:
                                             text='Channels to display\n(Only affects the visualization)')
         labelChans.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
 
-        channel_amount = ['2', '8']
-
-        channelAmount = customtkinter.CTkOptionMenu(master, values=channel_amount,
-                            command=self.select_channel_amount, width=50)
-        channelAmount.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=False)
-        channelAmount.set(self.max_chans)
-
         self.channelInfo = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.RIGHT,
                                             text="")
@@ -569,9 +607,9 @@ class Parameters:
             cb.pack(pady=self.widgetPadY, padx=0, side=tk.LEFT, expand=True, fill=None)
 
 
-    def select_channel_amount(self, event):
+    def select_channel_amount(self, numchans):
 
-        self.max_chans      = int(event)
+        self.max_chans      = numchans
         self.selected_chans = [True] * self.max_chans
         self.frameChannels.destroy()
         self.frameChannels              = customtkinter.CTkFrame(master=self.masterChannels, bg_color="transparent", fg_color="transparent")

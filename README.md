@@ -5,7 +5,7 @@ Neuri is an EEG board developed by Helment. This GUI is working with Neuri versi
 2. Forward the signal (raw) in to a serial port located at 127.0.0.1:XYZ. This allows you to connect any of your applications to the GUI and to work with the acquired signal in real-time.
 3. Store the data in an open text format for offline analysis (default: "Helment_[datetime].txt")
 
-![Main view of GUI](./neurigui/assets/Neuri_GUI_main_window.png)
+![Main view of GUI](./neuri/assets/Neuri_GUI_main_window.png)
 
 Watch the introdction on Youtube:
 

@@ -13,8 +13,21 @@ readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: BSD-3-Clause License",
+    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
+]
+dependencies = [
+  "setuptools",
+  "customtkinter==5.2.0",
+  "numpy",
+  "oauthlib",
+  "Pillow",
+  "PyGithub",
+  "PyQt5",
+  "pyqtgraph",
+  "pyserial",
+  "requests",
+  "scipy"
 ]
 
 [project.urls]

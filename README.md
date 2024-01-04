@@ -1,13 +1,15 @@
 # Neuri GUI
 
-Neuri is an EEG board developed by Helment. This GUI is working with Neuri versions 1.x and 2.x. The GUI has the following features:
+print(«Hello Volt»)
+
+A graphical interface for electrophysiological biosensors that allows you to:
 1. Set multiple parameters for real-time signal visualization
 2. Forward the signal (raw) in to a serial port located at 127.0.0.1:XYZ. This allows you to connect any of your applications to the GUI and to work with the acquired signal in real-time.
 3. Store the data in an open text format for offline analysis (default: "Helment_[datetime].txt")
 
 ![Main view of GUI](./neuri/assets/Neuri_GUI_main_window.png)
 
-Watch the introdction on Youtube:
+Watch the introduction on Youtube:
 
 [![Watch the introdcution](https://img.youtube.com/vi/8DbGR9KUszQ/hqdefault.jpg)](https://www.youtube.com/embed/8DbGR9KUszQ)
 
@@ -52,6 +54,11 @@ ng.Run()
 ```
 
 Note that your settings are stored in a "settings.cfg" file inside the current workspace directory of the IDE or terminal.
+
+## Compatible devices
+
+- Neuri 1.x
+- Neuri-Lolin S3-PRO
 
 ## Troubleshooting
 

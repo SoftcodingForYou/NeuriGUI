@@ -6,7 +6,7 @@ class ParamVal():
 
     def __init__(self, p):
 
-        self.ico_helment    = p.ico_helment
+        self.ico_helment    = p.ico_neuri
 
         error_messages      = self.verify_compatibility(p)
         self.alert_user(error_messages)

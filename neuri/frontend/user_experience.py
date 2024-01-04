@@ -8,7 +8,7 @@ import tkinter                              as tk
 class Aux:
 
     def __init__(self):
-        self.img_helment    = './frontend/Isotipo-Helment-color.png'
+        self.img_neuri    = './frontend/Neuri_logo.png'
         self.get_screen_info()
 
 
@@ -21,7 +21,7 @@ class Aux:
 
 
     def disp_pyqt_splash(self):
-        splash_pix = QtGui.QPixmap(self.img_helment)
+        splash_pix = QtGui.QPixmap(self.img_neuri)
         splash_pix = splash_pix.scaled(500, 500, QtCore.Qt.KeepAspectRatio)
         splash = QtWidgets.QSplashScreen(splash_pix, QtCore.Qt.WindowStaysOnTopHint)
         splash.show()
@@ -31,8 +31,8 @@ class Aux:
         root = tk.Tk()
 
         # multiple image size by zoom
-        pixels_x, pixels_y = tuple([int(0.10 * x) for x in Image.open(self.img_helment).size])
-        img = ImageTk.PhotoImage(Image.open(self.img_helment).resize((pixels_x, pixels_y)), master=root)
+        pixels_x, pixels_y = tuple([int(0.10 * x) for x in Image.open(self.img_neuri).size])
+        img = ImageTk.PhotoImage(Image.open(self.img_neuri).resize((pixels_x, pixels_y)), master=root)
 
         x_cordinate = int((self.screen_width/2) - (pixels_x/2))
         y_cordinate = int((self.screen_height/2) - (pixels_y/2))

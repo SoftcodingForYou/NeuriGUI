@@ -19,7 +19,7 @@ class Parameters:
         self.conf_file      = os.path.join(".", "settings.cfg")
         self.githubauth     = "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"
         self.version        = '2.81.1' # TO-DO: Find a more elegant way to dynamically define the current version as this line here gets forgotten a lot
-        self.ico_helment    = os.path.join(self.frontend_path, "Isotipo-Helment-color.ico")
+        self.ico_neuri      = os.path.join(self.frontend_path, "Neuri_logo.ico")
 
         self.set_defaults() # Necessary to execute first in case user 
                             # parameter not found in configuration file
@@ -273,7 +273,7 @@ class Parameters:
 
         # Decorations
         self.paramWin.title('Neuri GUI: Settings')
-        photo = ImageTk.PhotoImage(Image.open(self.ico_helment))
+        photo = ImageTk.PhotoImage(Image.open(self.ico_neuri))
         self.paramWin.wm_iconphoto(True, photo)
         
 
@@ -329,7 +329,7 @@ class Parameters:
                           expand=False, side=tk.TOP)
 
         rawtoken = self.githubauth
-        repository = "Helment/NeuriGUI"
+        repository = "davidmarcelbaum/NeuriGUI"
 
         token = os.getenv('GITHUB_TOKEN', rawtoken)
         g = Github()
@@ -345,7 +345,7 @@ class Parameters:
 
             if thisv < ver_latest:
 
-                target_webpage = "https://github.com/Helment/NeuriGUI/releases/tag/{}".format(latest_release.title)
+                target_webpage = "https://github.com/davidmarcelbaum/NeuriGUI/releases/tag/{}".format(latest_release.title)
 
                 button = customtkinter.CTkButton(
                     frameVersion, text="Download latest version",
@@ -647,7 +647,7 @@ class Parameters:
 
     def display_output_name(self, master):
         
-        self.sessionName = 'Helment_[timestamp]'
+        self.sessionName = 'Neuri_[timestamp]'
         self.labelSession = customtkinter.CTkLabel(master=master, 
             justify=customtkinter.CENTER,
             text='Optional: Set a session name')

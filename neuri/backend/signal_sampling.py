@@ -16,7 +16,7 @@ class Sampling():
         if parameter.set_customsession:
             file_name   = parameter.sessionName + '.txt'
         else:
-            file_name   = 'Helment ' + t0 + '.txt'
+            file_name   = 'Neuri ' + t0 + '.txt'
 
         # Prepare data output
         self.output_file= file_name

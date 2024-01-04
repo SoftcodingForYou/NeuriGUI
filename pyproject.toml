@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "neurigui"
-version = "2.81.0"
+version = "2.81.1"
 authors = [
   { name="David Marcel BAUM", email="contact@davidbaum.org" },
 ]
@@ -13,13 +13,13 @@ readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: BSD-3-Clause License",
     "Operating System :: OS Independent",
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/Helment/NeuriGUI"
-"Bug Tracker" = "https://github.com/Helment/NeuriGUI/issues"
+"Homepage" = "https://github.com/davidmarcelbaum/NeuriGUI"
+"Bug Tracker" = "https://github.com/davidmarcelbaum/NeuriGUI/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["neuri"]

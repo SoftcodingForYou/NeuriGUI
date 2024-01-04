@@ -3,21 +3,21 @@
 # Necessary step for relative imports when the GUI is run directly in an 
 # IDE instead of as module
 if ( __package__ == "" or __package__ == None ):
-    from backend.Helment_signal_processing      import Processing
-    from backend.Helment_configure_board        import ConfigureBoard
-    from backend.Helment_signal_sampling        import Sampling
-    from backend.Helment_parameter_validation   import ParamVal
-    from frontend.Helment_widgets               import GUIWidgets
-    from frontend.Helment_user_experience       import Aux
-    from frontend.Helment_parameters            import Parameters
+    from backend.signal_processing              import Processing
+    from backend.configure_board                import ConfigureBoard
+    from backend.signal_sampling                import Sampling
+    from backend.parameter_validation           import ParamVal
+    from frontend.widgets                       import GUIWidgets
+    from frontend.user_experience               import Aux
+    from frontend.parameters                    import Parameters
 else:
-    from .backend.Helment_signal_processing     import Processing
-    from .backend.Helment_configure_board       import ConfigureBoard
-    from .backend.Helment_signal_sampling       import Sampling
-    from .backend.Helment_parameter_validation  import ParamVal
-    from .frontend.Helment_widgets              import GUIWidgets
-    from .frontend.Helment_user_experience      import Aux
-    from .frontend.Helment_parameters           import Parameters
+    from .backend.signal_processing             import Processing
+    from .backend.configure_board               import ConfigureBoard
+    from .backend.signal_sampling               import Sampling
+    from .backend.parameter_validation          import ParamVal
+    from .frontend.widgets                      import GUIWidgets
+    from .frontend.user_experience              import Aux
+    from .frontend.parameters                   import Parameters
 
 from multiprocessing                            import Process, Array, Value
 from PyQt5                                      import QtCore, QtWidgets

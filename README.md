@@ -5,7 +5,7 @@ print(«Hello Volt»)
 A graphical interface for electrophysiological biosensors that allows you to:
 1. Set multiple parameters for real-time signal visualization
 2. Forward the signal (raw) in to a serial port located at 127.0.0.1:XYZ. This allows you to connect any of your applications to the GUI and to work with the acquired signal in real-time.
-3. Store the data in an open text format for offline analysis (default: "Helment_[datetime].txt")
+3. Store the data in an open text format for offline analysis (default: "Neuri_[datetime].txt")
 
 ![Main view of GUI](./neuri/assets/Neuri_GUI_main_window.png)
 
@@ -35,8 +35,8 @@ Other Linux specific steps are:
 ### Compilation
 
 The compiled version the the Neuri GUI runs way faster and has more stable  execution speed of iteration loops inside the backend of the GUI. You can **compile the GUI with Nuitka**:
-- Windows: `nuitka ./gui.py --onefile --enable-plugin=tk-inter --standalone --enable-plugin=pyqt5 --include-data-dir=./frontend/=data --windows-icon-from-ico=frontend/Isotipo-Helment-color.ico --windows-disable-console`
-- GNU/Linux: `nuitka3 ./gui.py --onefile --enable-plugin=tk-inter --standalone --enable-plugin=pyqt5 --include-data-dir=./frontend/=data --windows-icon-from-ico=frontend/Isotipo-Helment-color.ico --windows-disable-console` (note the 3 in nuitka3 compared to Windows)
+- Windows: `nuitka ./gui.py --onefile --enable-plugin=tk-inter --standalone --enable-plugin=pyqt5 --include-data-dir=./frontend/=data --windows-icon-from-ico=frontend/Neuri_logo.ico --windows-disable-console`
+- GNU/Linux: `nuitka3 ./gui.py --onefile --enable-plugin=tk-inter --standalone --enable-plugin=pyqt5 --include-data-dir=./frontend/=data --windows-icon-from-ico=frontend/Neuri_logo.ico --windows-disable-console` (note the 3 in nuitka3 compared to Windows)
 
 ### Packaging
 

@@ -72,10 +72,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # objects which will break at self.sampling.start(). We create a 
         # new object with the necessary variables only
         strpm = StreamingParameter(
-            pm.firmfeedback, pm.max_chans, pm.buffer_add, pm.buffer_length,
+            pm.start_code, pm.max_chans, pm.buffer_add, pm.buffer_length,
             pm.sample_rate, pm.PGA, pm.saving_interval, pm.udp_ip,
-            pm.udp_port)
-        self.board_port = confboard.ser
+            pm.udp_port, pm.board)
         self.sampling    = Process(target=sampl.fetch_sample,
             args=(confboard.ser, pm.send_sock, strpm,
                   shared_buffer, shared_timestamp, self.gui_running))
@@ -173,7 +172,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Start sampling processes
         # -----------------------------------------------------------------
-        if pm.firmfeedback == 2 or pm.firmfeedback == 3:
+        if pm.start_code == 2 or pm.start_code == 3:
             self.sampling.start()
         self.timer.start()
         
@@ -195,11 +194,13 @@ class StreamingParameter(object):
     saving_interval = 0
     udp_ip          = ""
     udp_port        = 0
+    board           = ""
 
     # The class "constructor" - It's actually an initializer 
-    def __init__(self, firmfeedback, max_chans, buffer_add, buffer_length,
-                 sample_rate, PGA, saving_interval, udp_ip, udp_port):
-        self.firmfeedback   = firmfeedback
+    def __init__(self, start_code, max_chans, buffer_add, buffer_length,
+                 sample_rate, PGA, saving_interval, udp_ip, udp_port,
+                 board):
+        self.start_code     = start_code
         self.max_chans      = max_chans
         self.buffer_add     = buffer_add
         self.buffer_length  = buffer_length
@@ -208,6 +209,7 @@ class StreamingParameter(object):
         self.saving_interval= saving_interval
         self.udp_ip         = udp_ip
         self.udp_port       = udp_port
+        self.board          = board
 
 
 class Run():

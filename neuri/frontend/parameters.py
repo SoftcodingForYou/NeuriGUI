@@ -17,9 +17,22 @@ class Parameters:
         self.frontend_path  = os.path.dirname(__file__)
 
         self.conf_file      = os.path.join(".", "settings.cfg")
-        self.githubauth     = "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"
-        self.version        = '2.81.1' # TO-DO: Find a more elegant way to dynamically define the current version as this line here gets forgotten a lot
+        self.version        = '2.82.0' # TO-DO: Find a more elegant way to dynamically define the current version as this line here gets forgotten a lot
         self.ico_neuri      = os.path.join(self.frontend_path, "Neuri_logo.ico")
+
+        # List elements:
+        # First =   start code (int)
+        #           The start code is the message that will be sent to 
+        #           the boards in order to initiate signal transfer and
+        #           will also define the samples per message. Might have to
+        #           be separated in future
+        # Second    Default sampling rate (int, Hz)
+        # Third     Baud rate (int)
+        self.board_characteristics = {
+            "Neuri V1 by Helment":                  [2, 200, 115200],
+            "Neuri-Lolin S3-PRO by Helment":        [2, 200, 115200],
+            "BioAmp EXG Pill by Upside Down Labs":  [2, 125, 115200]
+        }
 
         self.set_defaults() # Necessary to execute first in case user 
                             # parameter not found in configuration file
@@ -213,7 +226,7 @@ class Parameters:
         self.set_customsession = False
 
         #Signal arrays
-        self.sample_rate    = 200 #Hertz
+        self.sample_rate    = self.board_characteristics["Neuri V1 by Helment"][1] #Hertz
         self.max_chans      = 8 #scalar (Max. amount of input channels of board)
         self.selected_chans = [True] * self.max_chans
         self.buffer_length  = 10 #scalar (seconds)
@@ -222,13 +235,10 @@ class Parameters:
         self.PGA            = 24 #scalar
 
         #Signal reception
-        self.baud_rate      = 115200 #scalar default baudrate for connection
+        self.baud_rate      = self.board_characteristics["Neuri V1 by Helment"][2] #scalar default baudrate for connection
         self.port           = '' #Leave blank
         self.board          = '' #Leave blank
-        self.protocols      = {}
-        self.protocols["USB"]= 2
-        self.protocols["BT"]= 3
-        self.firmfeedback   = self.protocols["USB"]
+        self.start_code     = self.board_characteristics["Neuri V1 by Helment"][0]
         self.time_out       = None #Wait for message
 
         # Signal relay
@@ -242,8 +252,8 @@ class Parameters:
         #Signal processing
         self.filter_order   = 3 #scalar
         self.frequency_bands= {
-            'LineNoise':    (46, 54),
-            'LineNoise60':  (56, 64),
+            'LineNoise':    (48, 52),
+            'LineNoise60':  (58, 62),
             'Sleep':        (1, 30),
             'Theta':        (4, 8),
             'Whole':        (0.5, 45)}
@@ -284,7 +294,11 @@ class Parameters:
         frameScroll = self.add_scrollable_frame(self.paramWin)
         self.display_board_version(self.add_frame_ext_x(frameScroll))
         self.display_ports(self.add_frame_ext_x(frameScroll))
-        self.display_protocol(self.add_frame_ext_x(frameScroll))
+        
+        # Only used by the Neuri boards which can send data via Bluetooth
+        # (currently not implemented in Neuri)
+        # self.display_protocol(self.add_frame_ext_x(frameScroll))
+        
         self.display_gains(self.add_frame_ext_x(frameScroll))
         self.display_samplingrate(self.add_frame_ext_x(frameScroll))
         self.display_timerange(self.add_frame_ext_x(frameScroll))
@@ -328,10 +342,8 @@ class Parameters:
         frameVersion.pack(pady=0, padx=self.framePadX, fill=tk.X,
                           expand=False, side=tk.TOP)
 
-        rawtoken = self.githubauth
         repository = "davidmarcelbaum/NeuriGUI"
 
-        token = os.getenv('GITHUB_TOKEN', rawtoken)
         g = Github()
         
         try:
@@ -387,9 +399,8 @@ class Parameters:
     
     def display_board_version(self, master):
         
-        boards = ["Neuri V1", "Neuri-Lolin S3-PRO"]
         if self.board == '': 
-            defaultBoard = boards[0]
+            defaultBoard = list(self.board_characteristics.keys())[0]
             self.board   = defaultBoard
         else:
             defaultBoard = self.board
@@ -398,7 +409,8 @@ class Parameters:
                                             justify=customtkinter.LEFT,
                                             text='Select board')
         labelBoard.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
-        BoardMenu = customtkinter.CTkOptionMenu(master, values=boards,
+        BoardMenu = customtkinter.CTkOptionMenu(master,
+                                                values=list(self.board_characteristics.keys()),
                                                command=self.select_board)
         BoardMenu.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
         BoardMenu.set(defaultBoard)
@@ -409,11 +421,24 @@ class Parameters:
         self.board       = str(event)
         print('Board set to {}'.format(self.board))
 
-        channel_amount = ['2', '8']
-        if self.board == "Neuri V1":
+        self.board_characteristics = {
+            "Neuri V1 by Helment":                  [2, 200, 115200],
+            "Neuri-Lolin S3-PRO by Helment":        [2, 200, 115200],
+            "BioAmp EXG Pill by Upside Down Labs":  [2, 125, 115200]
+        }
+
+        if self.board == "Neuri V1 by Helment":
             self.select_channel_amount(2)
-        elif "Neuri-Lolin S3-PRO":
+            self.predefine_sampling_rate(200)
+            self.baud_rate = self.board_characteristics["Neuri V1 by Helment"][2]
+        elif self.board == "Neuri-Lolin S3-PRO by Helment":
             self.select_channel_amount(8)
+            self.predefine_sampling_rate(200)
+            self.baud_rate = self.board_characteristics["Neuri-Lolin S3-PRO by Helment"][2]
+        elif self.board == "BioAmp EXG Pill by Upside Down Labs":
+            self.select_channel_amount(1)
+            self.predefine_sampling_rate(125)
+            self.baud_rate = self.board_characteristics["BioAmp EXG Pill by Upside Down Labs"][2]
 
 
     def display_ports(self, master):
@@ -458,31 +483,31 @@ class Parameters:
         print('Port set to {}'.format(self.port))
 
 
-    def display_protocol(self, master):
+    # def display_protocol(self, master):
 
-        labelProt = customtkinter.CTkLabel(master=master, 
-                                            justify=customtkinter.LEFT,
-                                            text='Select connection protocol')
-        labelProt.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
+    #     labelProt = customtkinter.CTkLabel(master=master, 
+    #                                         justify=customtkinter.LEFT,
+    #                                         text='Select connection protocol')
+    #     labelProt.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
 
-        self.prot_var  = tk.DoubleVar(value=self.firmfeedback)
+    #     self.prot_var  = tk.DoubleVar(value=self.neuri_start_signal)
 
-        protocolKeys = list(self.protocols.keys())
-        protocolVals = list(self.protocols.values())
+    #     protocolKeys = list(self.neuri_start_signals.keys())
+    #     protocolVals = list(self.neuri_start_signals.values())
 
-        for i in range(len(self.protocols)):
-            rb = customtkinter.CTkRadioButton(master=master,
-                                              variable=self.prot_var,
-                                              value=protocolVals[i],
-                                              text=str(protocolKeys[i]),
-                                              command=self.select_protocol)
-            rb.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
+    #     for i in range(len(self.neuri_start_signals)):
+    #         rb = customtkinter.CTkRadioButton(master=master,
+    #                                           variable=self.prot_var,
+    #                                           value=protocolVals[i],
+    #                                           text=str(protocolKeys[i]),
+    #                                           command=self.select_protocol)
+    #         rb.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
 
 
-    def select_protocol(self):
+    # def select_protocol(self):
         
-        self.firmfeedback = self.prot_var.get()
-        print('Will send a \"{}\" to board'.format(self.firmfeedback))
+    #     self.firmfeedback = self.prot_var.get()
+    #     print('Will send a \"{}\" to board'.format(self.firmfeedback))
 
 
     def display_gains(self, master):
@@ -513,17 +538,22 @@ class Parameters:
             text='Optional: Set sampling rate')
         self.labelSfr.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
 
-        self.labelInfo = customtkinter.CTkLabel(master=master, 
+        self.masterSfr              = customtkinter.CTkFrame(master=master, bg_color="transparent", fg_color="transparent")
+        self.masterSfr.pack(pady=0, padx=0, fill="both", expand=True, side=tk.RIGHT)
+        self.frameSfr              = customtkinter.CTkFrame(master=self.masterSfr, bg_color="transparent", fg_color="transparent")
+        self.frameSfr.pack(pady=0, padx=0, fill="both", expand=True, side=tk.RIGHT)
+
+        self.labelInfo = customtkinter.CTkLabel(master=self.frameSfr, 
             justify=customtkinter.LEFT,
             text='Caution: Setting wrong values will corrupt data visualization')
         self.labelInfo.pack(pady=(0, self.widgetPadY), padx=self.widgetPadX, side=tk.BOTTOM)
 
-        self.textSfr = customtkinter.CTkEntry(master=master,
+        self.textSfr = customtkinter.CTkEntry(master=self.frameSfr,
                                            width=200, height=15,
                                            placeholder_text=str(self.sample_rate))
         self.textSfr.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, fill=tk.X, expand=True)
 
-        self.buttonValidate = customtkinter.CTkButton(master=master,
+        self.buttonValidate = customtkinter.CTkButton(master=self.frameSfr,
                                                  command=self.select_sampling_rate,
                                                  text='Validate')
         self.buttonValidate.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
@@ -538,7 +568,7 @@ class Parameters:
                 self.sample_rate = newSR
                 self.labelInfo.configure(text='Sampling rate set to {} Hz'.format(self.sample_rate),
                                         text_color='green')
-                print('Sampling rate set to {}.'.format(self.sample_rate))
+                print('Sampling rate set to {} Hz.'.format(self.sample_rate))
             else:
                 print('Sampling rate must be at least 100 Hz. Reverting back to {} Hz'.format(self.sample_rate))
                 self.labelInfo.configure(text='Sampling rate must be at least 100 Hz. Reverting back to {} Hz'.format(self.sample_rate),
@@ -548,6 +578,31 @@ class Parameters:
             print('Please enter an integer value. Reverting back to {} Hz'.format(self.sample_rate))
             self.labelInfo.configure(text='Please enter an integer value. Reverting back to {} Hz'.format(self.sample_rate),
                                      text_color='red')
+
+
+    def predefine_sampling_rate(self, sfr):
+        self.sample_rate = sfr
+
+        self.frameSfr.destroy()
+        self.frameSfr              = customtkinter.CTkFrame(master=self.masterSfr, bg_color="transparent", fg_color="transparent")
+        self.frameSfr.pack(pady=0, padx=0, fill="both", expand=True, side=tk.RIGHT)
+
+        self.labelInfo = customtkinter.CTkLabel(master=self.frameSfr, 
+            justify=customtkinter.LEFT,
+            text='Changed to default sampling rate of selected board: {} Hz.'.format(self.sample_rate))
+        self.labelInfo.pack(pady=(0, self.widgetPadY), padx=self.widgetPadX, side=tk.BOTTOM)
+
+        self.textSfr = customtkinter.CTkEntry(master=self.frameSfr,
+                                           width=200, height=15,
+                                           placeholder_text=str(self.sample_rate))
+        self.textSfr.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.buttonValidate = customtkinter.CTkButton(master=self.frameSfr,
+                                                 command=self.select_sampling_rate,
+                                                 text='Validate')
+        self.buttonValidate.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
+
+        print('Changed to default sampling rate of selected board: {} Hz.'.format(self.sample_rate))
 
 
     def display_timerange(self, master):

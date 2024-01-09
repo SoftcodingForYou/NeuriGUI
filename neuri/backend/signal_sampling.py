@@ -26,7 +26,7 @@ class Sampling():
             file.close() # Important for data to get written
 
 
-    def bin_to_voltage(self, s_bin, pga):
+    def bin_to_voltage(self, s_bin, pga, board_code):
         # =================================================================
         # Convert binary into volts
         # Input
@@ -36,29 +36,36 @@ class Sampling():
         # Output
         #   - voltage   Float (microvolts)
         # =================================================================
-        s_bin       = int(s_bin) # requieres int
-        sign_bit    = 0
-        if s_bin == 0:
-            return 0
-        if s_bin > 0 and s_bin <= 8388607:
-            sign_bit = s_bin
-        elif s_bin > 8388607 and s_bin <= 2*8388607:
-            sign_bit = -2*8388607 + s_bin - 1
-        else:
-            print('sign_bit not assigned, returning 0')
-        
-        voltage = (4.5*sign_bit)/(pga*8388607.0)
-        voltage = voltage * 1000000 # Convert to microvolts
 
-        #voltage = random.randrange(-200, 200)
-        return voltage
+        if board_code == 1:
+            return s_bin
+        else:
+            s_bin       = int(s_bin) # requieres int
+            sign_bit    = 0
+            if s_bin == 0:
+                return 0
+            if s_bin > 0 and s_bin <= 8388607:
+                sign_bit = s_bin
+            elif s_bin > 8388607 and s_bin <= 2*8388607:
+                sign_bit = -2*8388607 + s_bin - 1
+            else:
+                print('sign_bit not assigned, returning 0')
+            
+            voltage = (4.5*sign_bit)/(pga*8388607.0)
+            voltage = voltage * 1000000 # Convert to microvolts
+
+            #voltage = random.randrange(-200, 200)
+            return voltage
     
 
-    def channel_assignment(self, str_message, s_chans):
+    def messge_to_samples(self, str_message, s_chans, board_code):
         # -----------------------------------------------------------------
         # Extract samples from board
         # Input
-        #   str_message Raw message string coming from board
+        #   str_message (str) Raw message string coming from board
+        #   s_chans     (int) How many channels shall the samples be 
+        #               assigned to
+        #   board code  (int) Defines code pipeline based on board type
         # Default in case of faulty message
         eeg_array       = expand_dims(
             array([0] * s_chans, dtype=float), # Crucial to set float
@@ -68,66 +75,83 @@ class Sampling():
         #   eeg_valid   Boolean whether workable data or not
         # -----------------------------------------------------------------
 
-        str_message     = str_message[
-            str_message.find('{'):str_message.find('}')+1]
-        
-        # Build Python dictionnary
-        try:
-            chanDict        = loads(str_message)
-        except decoder.JSONDecodeError:
-            # Corrupt message: not all channels present
-            print("Skipped message")
+        if board_code == 0: # Neuri board
+            str_message     = str_message[
+                str_message.find('{'):str_message.find('}')+1]
+            
+            # Build Python dictionnary
+            try:
+                chanDict        = loads(str_message)
+            except decoder.JSONDecodeError:
+                # Corrupt message: not all channels present
+                print("Skipped message")
+                return eeg_array, eeg_valid
+
+            if len(chanDict) != s_chans:
+                return eeg_array, eeg_valid
+            
+            eeg_array       = expand_dims(
+                fromiter(chanDict.values(), dtype=float), # Crucial to set float
+                axis=1)
+            eeg_valid       = True
+            
             return eeg_array, eeg_valid
+        
+        elif board_code == 1: # Upside Down Labs
+            str_message = str_message.replace("b'", "")
+            str_message = str_message.replace("\\r\\n\'", "")
 
-        if len(chanDict) != s_chans:
+            try:
+                eeg_array[0, 0]   = float(str_message)
+            except ValueError:
+                return eeg_array, eeg_valid
+            
+            eeg_valid       = True
             return eeg_array, eeg_valid
-        
-        eeg_array       = expand_dims(
-            fromiter(chanDict.values(), dtype=float), # Crucial to set float
-            axis=1)
-        eeg_valid       = True
-        
-        return eeg_array, eeg_valid
+    
+
+    def setup_neuri_board(self, receiver, start_code):
+        # TO-DO: These functions below do not empty the buffer at the 
+        # port as they are supposed to do
+        receiver.flush()
+        receiver.reset_input_buffer()
+        receiver.reset_output_buffer()
+        receiver.write(bytes(str(start_code), 'utf-8'))
+
+        board_booting = True
+        print('Board is booting up ...')
+        while board_booting:
+            raw_message = str(receiver.readline())
+            print(raw_message)
+            if 'Listening ...' in raw_message:
+                receiver.write(bytes(str(start_code), 'utf-8')) # Try again
+                sleep(1)
+            elif '{' in raw_message and '}' in raw_message:
+                print('Fully started')
+                board_booting = False
 
 
-    def fetch_sample(self, receiver, transmitter, parameter, shared_buffer, shared_timestamp, gui_running):
+    def fetch_sample(self, receiver, transmitter, parameter, shared_buffer,
+                     shared_timestamp, gui_running):
 
-        if parameter.firmfeedback == 2: # USB
+        if "Neuri" in parameter.board:
+            board_code      = 0
             s_per_buffer    = 1
+            if parameter.start_code == 3:
+                s_per_buffer    = 10
+                print('Ordered board to send data via Bluetooth. Switching mode ...')
+        elif "EXG Pill" in parameter.board:
+            s_per_buffer    = 1 # all boards
+            board_code      = 1
             print('Ordered board to send data via USB. Switching mode ...')
-        elif parameter.firmfeedback == 3: # Bluetooth
-            s_per_buffer    = 10
-            print('Ordered board to send data via Bluetooth. Switching mode ...')
-
-        if receiver.port == '':
-            raise Exception('Verify that desired connection type (USB or Bluetooth) are indeed available')
 
         with receiver as r:
 
             # Open communication ----------------------------------------------
             sleep(1)
 
-            # TO-DO: These functions below do not empty the buffer at the 
-            # port as they are supposed to do
-            r.flush()
-            r.reset_input_buffer()
-            r.reset_output_buffer()
-
-            r.write(bytes(str(parameter.firmfeedback), 'utf-8'))
-            # time.sleep(1)
-
-            board_booting = True
-            print('Board is booting up ...')
-            while board_booting:
-                raw_message = str(r.readline())
-                print(raw_message)
-                if 'Listening ...' in raw_message:
-                    r.write(bytes(str(parameter.firmfeedback), 'utf-8')) # Try again
-                    sleep(1)
-                elif '{' in raw_message and '}' in raw_message:
-                    print('Fully started')
-                    board_booting = False
-
+            if board_code == 0:
+                self.setup_neuri_board(r, parameter.start_code)
 
             # Prealloate values of loop ---------------------------------------
             start_time          = int(perf_counter() * 1000)
@@ -162,7 +186,8 @@ class Sampling():
                 
                 raw_message             = str(r.readline())
 
-                buffer_in, valid_eeg    = self.channel_assignment(raw_message, s_chans)
+                buffer_in, valid_eeg    = self.messge_to_samples(
+                    raw_message, s_chans, board_code)
 
                 if not valid_eeg:
                     # TO-DO: Implement an interpolation system
@@ -186,7 +211,7 @@ class Sampling():
 
                     # Convert binary to voltage values
                     for iBin in range(s_chans):
-                        sample[iBin]    = self.bin_to_voltage(sample[iBin], pga)
+                        sample[iBin]    = self.bin_to_voltage(sample[iBin], pga, board_code)
                         relay_array["".join(["c", str(iBin+1)])] = str(sample[iBin])
 
                     update_buffer       = concatenate((buffer, expand_dims(sample, 1)), axis=1)
@@ -202,7 +227,6 @@ class Sampling():
                     # Update shared memory allocations for frontend
                     shared_buffer[:] = reshape(buffer, buffer.size) # Has left edge for filtering
                     shared_timestamp.value = time_stamp_now
-                    # pipe_conn.put((buffer, time_stamp_now))
 
                     # Write out samples to file -----------------------------------
                     if sample_count == saving_interval:

@@ -146,7 +146,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         else:
             
-            self.setWindowTitle('Helment EEG GUI (raw data available at {}:{})'.format(pm.udp_ip, pm.udp_port))
+            self.setWindowTitle('NeuriGUI (raw data available at {}:{})'.format(pm.udp_ip, pm.udp_port))
 
             # Add GUI elements
             vertlayout.addLayout(controlpanel)

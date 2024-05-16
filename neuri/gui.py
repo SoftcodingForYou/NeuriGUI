@@ -1,29 +1,24 @@
 #Prepare userland =========================================================
-
-# Necessary step for relative imports when the GUI is run directly in an 
-# IDE instead of as module
-if ( __package__ == "" or __package__ == None ):
-    from backend.signal_processing              import Processing
-    from backend.configure_board                import ConfigureBoard
-    from backend.signal_sampling                import Sampling
-    from backend.parameter_validation           import ParamVal
-    from frontend.widgets                       import GUIWidgets
-    from frontend.user_experience               import Aux
-    from frontend.parameters                    import Parameters
-else:
-    from .backend.signal_processing             import Processing
-    from .backend.configure_board               import ConfigureBoard
-    from .backend.signal_sampling               import Sampling
-    from .backend.parameter_validation          import ParamVal
-    from .frontend.widgets                      import GUIWidgets
-    from .frontend.user_experience              import Aux
-    from .frontend.parameters                   import Parameters
-
 from multiprocessing                            import Process, Array, Value
 from PyQt5                                      import QtCore, QtWidgets
 from numpy                                      import zeros
 from time                                       import sleep
 import sys  # We need sys so that we can pass argv to QApplication
+
+# Necessary step for relative imports when the GUI is run directly in an 
+# IDE instead of as module
+try:
+    from backend.signal_processing              import Processing
+    from backend.board_agnostic_utils           import BoardAgnosticUtils
+    from backend.parameter_validation           import ParamVal
+    from frontend.widgets                       import GUIWidgets
+    from frontend.parameters                    import Parameters
+except:
+    from .backend.signal_processing             import Processing
+    from .backend.board_agnostic_utils          import BoardAgnosticUtils
+    from .backend.parameter_validation          import ParamVal
+    from .frontend.widgets                      import GUIWidgets
+    from .frontend.parameters                   import Parameters
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -41,19 +36,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # -----------------------------------------------------------------
         proc                = Processing(pm)
 
-        # Splash screen
+        # Load methods for board handling
         # -----------------------------------------------------------------
-        # auxgui              = Aux()
-        # splash, pb          = auxgui.disp_splash()
-        # auxgui.report_progress(splash, pb, 5)
-
-        # Load methods and build communication with EEG board
-        # -----------------------------------------------------------------
-        # auxgui.report_progress(splash, pb, 5)
-        confboard           = ConfigureBoard(pm)  # Board communication
-        # auxgui.report_progress(splash, pb, 20)
-        sampl               = Sampling(pm)        # Signal handling
-        # auxgui.report_progress(splash, pb, 5)
+        boardutils          = BoardAgnosticUtils(pm)
 
         # Generate variable exchange variables (shared memory allocations)
         # -----------------------------------------------------------------
@@ -67,25 +52,21 @@ class MainWindow(QtWidgets.QMainWindow):
         # Generate separate processes to not slow down sampling by any
         # other executions
         # -----------------------------------------------------------------
-
         # Here, we can not just parse "pm" as it contains non-pickable tk 
         # objects which will break at self.sampling.start(). We create a 
         # new object with the necessary variables only
-        strpm = StreamingParameter(
-            pm.start_code, pm.max_chans, pm.buffer_add, pm.buffer_length,
-            pm.sample_rate, pm.PGA, pm.saving_interval, pm.udp_ip,
-            pm.udp_port, pm.board)
-        self.sampling    = Process(target=sampl.fetch_sample,
-            args=(confboard.ser, pm.send_sock, strpm,
-                  shared_buffer, shared_timestamp, self.gui_running))
+        sampling_functions = boardutils.get_board_specific_utils(pm.board)()
+        self.sampling    = Process(
+            target=sampling_functions.process_samples,
+            args=(pm.send_sock,
+                  boardutils.streaming_parameter,
+                  shared_buffer,
+                  shared_timestamp,
+                  self.gui_running))
 
         # Build GUI
         # -----------------------------------------------------------------
         super(MainWindow, self).__init__(*args, **kwargs)
-        
-        # This following line causes and X11 error on GNU/Linux (tried with
-        # various distributions)
-        # self.setWindowIcon(QtGui.QIcon(pm.img_helment))
         
         guiwidgets          = GUIWidgets(self, proc, pm)
         # Inherit processing functions that will be used during plot update
@@ -115,7 +96,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         guiwidgets.initiate_theme() # Needs to be called after widget 
                                     # elements initiation since hard-coded
-        # auxgui.report_progress(splash, pb, 15)
 
         self.setCentralWidget(self.central_widget)
         self.central_widget.setLayout(vertlayout) # Draw elements in main widget
@@ -141,8 +121,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.setCentralWidget(self.central_widget)
             self.central_widget.setLayout(vertlayout) # Draw elements in main widget
 
-            # Prepare buffer-emptying function
-            self.timer.timeout.connect(lambda: sampl.headless_sampling(shared_buffer, shared_timestamp))
+            # Prepare pseudo-receiver function in order to satisfy timer
+            self.timer.timeout.connect(lambda: boardutils.headless_sampling())
 
         else:
             
@@ -166,10 +146,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 range(0, int(pm.sample_rate * pm.buffer_length), pm.s_down), pm.max_chans,
                 [i for i in range(pm.max_chans) if pm.selected_chans[i]], shared_buffer, shared_timestamp))
 
-        # Splash screen needs to be closed before timer start
-        # auxgui.report_progress(splash, pb, 19)
-        # splash.destroy()
-
         # Start sampling processes
         # -----------------------------------------------------------------
         if pm.start_code == 2 or pm.start_code == 3:
@@ -182,34 +158,6 @@ class MainWindow(QtWidgets.QMainWindow):
         sleep(2) # A second longer than the sampling thread
         self.timer.stop()
         self.sampling.terminate()
-
-
-class StreamingParameter(object):
-    firmfeedback    = 0
-    max_chans       = 0
-    buffer_add      = 0
-    buffer_length   = 0
-    sample_rate     = 0
-    PGA             = 0
-    saving_interval = 0
-    udp_ip          = ""
-    udp_port        = 0
-    board           = ""
-
-    # The class "constructor" - It's actually an initializer 
-    def __init__(self, start_code, max_chans, buffer_add, buffer_length,
-                 sample_rate, PGA, saving_interval, udp_ip, udp_port,
-                 board):
-        self.start_code     = start_code
-        self.max_chans      = max_chans
-        self.buffer_add     = buffer_add
-        self.buffer_length  = buffer_length
-        self.sample_rate    = sample_rate
-        self.PGA            = PGA
-        self.saving_interval= saving_interval
-        self.udp_ip         = udp_ip
-        self.udp_port       = udp_port
-        self.board          = board
 
 
 class Run():

@@ -4,9 +4,9 @@ build-backend = "hatchling.build"
 
 [project]
 name = "neurigui"
-version = "2.82.0"
+version = "2.90.0"
 authors = [
-  { name="David Marcel BAUM", email="contact@davidbaum.org" },
+  { name="SoftCodingForYou (David Marcel BAUM)", email="contact@davidbaum.org" },
 ]
 description = "Graphical interface for the several biosensors for the work with electrophysiological data"
 readme = "README.md"
@@ -31,8 +31,8 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/davidmarcelbaum/NeuriGUI"
-"Bug Tracker" = "https://github.com/davidmarcelbaum/NeuriGUI/issues"
+"Homepage" = "https://github.com/SoftcodingForYou/NeuriGUI"
+"Bug Tracker" = "https://github.com/SoftcodingForYou/NeuriGUI/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["neuri"]

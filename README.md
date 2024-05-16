@@ -1,6 +1,6 @@
 # Neuri GUI
 
-print(«Hello Volt»)
+print("Hello, Volt!")
 
 A graphical interface for electrophysiological biosensors that allows you to:
 1. Set multiple parameters for real-time signal visualization
@@ -12,6 +12,12 @@ A graphical interface for electrophysiological biosensors that allows you to:
 Watch the introduction on Youtube:
 
 [![Watch the introdcution](https://img.youtube.com/vi/8DbGR9KUszQ/hqdefault.jpg)](https://www.youtube.com/embed/8DbGR9KUszQ)
+
+## Compatible devices
+
+- Neuri 1.x by Helment
+- Neuri-Lolin S3-PRO by Helment
+- BioAmp EXG Pill by Upside Down Labs 
 
 ## Setup
 
@@ -54,11 +60,6 @@ ng.Run()
 ```
 
 Note that your settings are stored in a "settings.cfg" file inside the current workspace directory of the IDE or terminal.
-
-## Compatible devices
-
-- Neuri 1.x
-- Neuri-Lolin S3-PRO
 
 ## Troubleshooting
 

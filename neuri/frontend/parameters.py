@@ -7,6 +7,10 @@ import customtkinter
 import os
 import socket
 import webbrowser
+try:
+    from backend.compatible_boards          import COMPATIBLE_BOARDS
+except:
+    from ..backend.compatible_boards        import COMPATIBLE_BOARDS
 
 class Parameters:
 
@@ -17,22 +21,8 @@ class Parameters:
         self.frontend_path  = os.path.dirname(__file__)
 
         self.conf_file      = os.path.join(".", "settings.cfg")
-        self.version        = '2.82.0' # TO-DO: Find a more elegant way to dynamically define the current version as this line here gets forgotten a lot
+        self.version        = '2.90.0' # TO-DO: Find a more elegant way to dynamically define the current version as this line here gets forgotten a lot
         self.ico_neuri      = os.path.join(self.frontend_path, "Neuri_logo.ico")
-
-        # List elements:
-        # First =   start code (int)
-        #           The start code is the message that will be sent to 
-        #           the boards in order to initiate signal transfer and
-        #           will also define the samples per message. Might have to
-        #           be separated in future
-        # Second    Default sampling rate (int, Hz)
-        # Third     Baud rate (int)
-        self.board_characteristics = {
-            "Neuri V1 by Helment":                  [2, 200, 115200],
-            "Neuri-Lolin S3-PRO by Helment":        [2, 200, 115200],
-            "BioAmp EXG Pill by Upside Down Labs":  [2, 125, 115200]
-        }
 
         self.set_defaults() # Necessary to execute first in case user 
                             # parameter not found in configuration file
@@ -226,7 +216,7 @@ class Parameters:
         self.set_customsession = False
 
         #Signal arrays
-        self.sample_rate    = self.board_characteristics["Neuri V1 by Helment"][1] #Hertz
+        self.sample_rate    = COMPATIBLE_BOARDS["Neuri V1 by Helment"][1] #Hertz
         self.max_chans      = 8 #scalar (Max. amount of input channels of board)
         self.selected_chans = [True] * self.max_chans
         self.buffer_length  = 10 #scalar (seconds)
@@ -235,10 +225,10 @@ class Parameters:
         self.PGA            = 24 #scalar
 
         #Signal reception
-        self.baud_rate      = self.board_characteristics["Neuri V1 by Helment"][2] #scalar default baudrate for connection
+        self.baud_rate      = COMPATIBLE_BOARDS["Neuri V1 by Helment"][2] #scalar default baudrate for connection
         self.port           = '' #Leave blank
         self.board          = '' #Leave blank
-        self.start_code     = self.board_characteristics["Neuri V1 by Helment"][0]
+        self.start_code     = COMPATIBLE_BOARDS["Neuri V1 by Helment"][0]
         self.time_out       = None #Wait for message
 
         # Signal relay
@@ -294,10 +284,6 @@ class Parameters:
         frameScroll = self.add_scrollable_frame(self.paramWin)
         self.display_board_version(self.add_frame_ext_x(frameScroll))
         self.display_ports(self.add_frame_ext_x(frameScroll))
-        
-        # Only used by the Neuri boards which can send data via Bluetooth
-        # (currently not implemented in Neuri)
-        # self.display_protocol(self.add_frame_ext_x(frameScroll))
         
         self.display_gains(self.add_frame_ext_x(frameScroll))
         self.display_samplingrate(self.add_frame_ext_x(frameScroll))
@@ -357,7 +343,7 @@ class Parameters:
 
             if thisv < ver_latest:
 
-                target_webpage = "https://github.com/davidmarcelbaum/NeuriGUI/releases/tag/{}".format(latest_release.title)
+                target_webpage = "https://github.com/SoftcodingForYou/NeuriGUI/releases/tag/{}".format(latest_release.title)
 
                 button = customtkinter.CTkButton(
                     frameVersion, text="Download latest version",
@@ -400,7 +386,7 @@ class Parameters:
     def display_board_version(self, master):
         
         if self.board == '': 
-            defaultBoard = list(self.board_characteristics.keys())[0]
+            defaultBoard = list(COMPATIBLE_BOARDS.keys())[0]
             self.board   = defaultBoard
         else:
             defaultBoard = self.board
@@ -410,7 +396,7 @@ class Parameters:
                                             text='Select board')
         labelBoard.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
         BoardMenu = customtkinter.CTkOptionMenu(master,
-                                                values=list(self.board_characteristics.keys()),
+                                                values=list(COMPATIBLE_BOARDS.keys()),
                                                command=self.select_board)
         BoardMenu.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
         BoardMenu.set(defaultBoard)
@@ -421,24 +407,18 @@ class Parameters:
         self.board       = str(event)
         print('Board set to {}'.format(self.board))
 
-        self.board_characteristics = {
-            "Neuri V1 by Helment":                  [2, 200, 115200],
-            "Neuri-Lolin S3-PRO by Helment":        [2, 200, 115200],
-            "BioAmp EXG Pill by Upside Down Labs":  [2, 125, 115200]
-        }
-
         if self.board == "Neuri V1 by Helment":
             self.select_channel_amount(2)
             self.predefine_sampling_rate(200)
-            self.baud_rate = self.board_characteristics["Neuri V1 by Helment"][2]
+            self.baud_rate = COMPATIBLE_BOARDS["Neuri V1 by Helment"][2]
         elif self.board == "Neuri-Lolin S3-PRO by Helment":
             self.select_channel_amount(8)
             self.predefine_sampling_rate(200)
-            self.baud_rate = self.board_characteristics["Neuri-Lolin S3-PRO by Helment"][2]
+            self.baud_rate = COMPATIBLE_BOARDS["Neuri-Lolin S3-PRO by Helment"][2]
         elif self.board == "BioAmp EXG Pill by Upside Down Labs":
             self.select_channel_amount(1)
             self.predefine_sampling_rate(125)
-            self.baud_rate = self.board_characteristics["BioAmp EXG Pill by Upside Down Labs"][2]
+            self.baud_rate = COMPATIBLE_BOARDS["BioAmp EXG Pill by Upside Down Labs"][2]
 
 
     def display_ports(self, master):

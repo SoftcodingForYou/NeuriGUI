@@ -1,5 +1,4 @@
 from PyQt5                                  import QtCore, QtWidgets, QtGui
-from pyqtgraph                              import PlotWidget
 from PIL                                    import Image, ImageTk
 from tkinter                                import ttk
 from sys                                    import platform

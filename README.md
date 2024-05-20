@@ -63,7 +63,8 @@ Note that your settings are stored in a "settings.cfg" file inside the current w
 
 ## Troubleshooting
 
-1. If the GUI seems to be stuck, most probably the wrong ports have been selected Check the port names (ie COM12 vs COM13). Pay special attention to the fact that if a port file is specified in the settings.conf, the GUI will default to that port even if there is no device connected to it.
+1. If the GUI seems to be stuck, check the following:
+- Did you set the right port (ie COM12 vs COM13)?
 
 2. GitHub authentication errors might arise from the fact that Python is using the "github" package instead of the "pygithub" one when performing `from github import Github`. Try uninstalling github and install the pygithub package:
 ```

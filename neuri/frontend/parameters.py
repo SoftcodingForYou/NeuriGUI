@@ -392,6 +392,7 @@ class Parameters:
 
 
     def get_board_features(self, board_name):
+        self.start_code = COMPATIBLE_BOARDS[board_name][0]
         self.sample_rate = COMPATIBLE_BOARDS[board_name][1]
         self.baud_rate = COMPATIBLE_BOARDS[board_name][2]
         self.max_chans = COMPATIBLE_BOARDS[board_name][4]

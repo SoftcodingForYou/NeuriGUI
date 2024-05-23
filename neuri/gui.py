@@ -148,8 +148,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Start sampling processes
         # -----------------------------------------------------------------
-        if pm.start_code == 2 or pm.start_code == 3:
-            self.sampling.start()
+        self.sampling.start()
         self.timer.start()
         
 

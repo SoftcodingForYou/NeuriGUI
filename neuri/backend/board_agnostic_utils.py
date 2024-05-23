@@ -42,6 +42,7 @@ class BoardAgnosticUtils():
         """
         for _, board_name in enumerate(list(COMPATIBLE_BOARDS.keys())):
             if board == board_name:
+                print(f"Will use {COMPATIBLE_BOARDS[board_name][3].__qualname__} to communicate with board")
                 return COMPATIBLE_BOARDS[board_name][3]
         raise Exception("Could not get board-specific functions collection")
 

@@ -365,12 +365,14 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
 
         x_current           = shared_timestamp.value / 1000
         x_first             = x_current - len(self.x) * s_down / sampling_rate
-        self.x              = list(
-            range(
-                round(x_first*1000),
-                round(x_current*1000),
-                int(1000/sampling_rate*s_down)))
-        self.x              = [i / 1000 for i in self.x]
+        self.x = [s_down / sampling_rate * i + x_first for i in range(len(self.x))] 
+        
+        # self.x              = list(
+        #     range(
+        #         round(x_first*1000),
+        #         round(x_current*1000),
+        #         int(1000/sampling_rate*s_down)))
+        # self.x              = [i / 1000 for i in self.x]
 
 
         if self.streaming == True:

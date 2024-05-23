@@ -231,6 +231,9 @@ class Parameters:
         self.start_code     = COMPATIBLE_BOARDS["Neuri V1 by Helment"][0]
         self.uses_lsl       = COMPATIBLE_BOARDS["Neuri V1 by Helment"][5]
         self.adjustable_pga = COMPATIBLE_BOARDS["Neuri V1 by Helment"][6]
+        self.secondary_sampling_rate = COMPATIBLE_BOARDS["Neuri V1 by Helment"][7]
+        self.secondary_max_chans = COMPATIBLE_BOARDS["Neuri V1 by Helment"][8]
+        self.streamed_data_type = "EEG"
         self.time_out       = None #Wait for message
 
         # Signal relay
@@ -248,7 +251,9 @@ class Parameters:
             'LineNoise60':  (58, 62),
             'Sleep':        (1, 30),
             'Theta':        (4, 8),
-            'Whole':        (0.5, 45)}
+            'Whole':        (0.5, 45),
+            'Slow':         (0.1, 6),
+        }
 
 
     def build_frontend(self):
@@ -288,6 +293,7 @@ class Parameters:
         self.display_ports(self.add_frame_ext_x(frameScroll))
         
         self.display_gains(self.add_frame_ext_x(frameScroll))
+        self.display_data_type(self.add_frame_ext_x(frameScroll))
         self.display_samplingrate(self.add_frame_ext_x(frameScroll))
         self.display_timerange(self.add_frame_ext_x(frameScroll))
         self.display_channels(self.add_frame_ext_x(frameScroll))
@@ -384,6 +390,16 @@ class Parameters:
         self.screen_height = root.winfo_screenheight()
         root.destroy()
 
+
+    def get_board_features(self, board_name):
+        self.sample_rate = COMPATIBLE_BOARDS[board_name][1]
+        self.baud_rate = COMPATIBLE_BOARDS[board_name][2]
+        self.max_chans = COMPATIBLE_BOARDS[board_name][4]
+        self.uses_lsl = COMPATIBLE_BOARDS[board_name][5]
+        self.adjustable_pga = COMPATIBLE_BOARDS[board_name][6]
+        self.secondary_sampling_rate = COMPATIBLE_BOARDS[board_name][7]
+        self.secondary_max_chans = COMPATIBLE_BOARDS[board_name][8]
+
     
     def display_board_version(self, master):
         
@@ -393,8 +409,7 @@ class Parameters:
         else:
             defaultBoard = self.board
 
-        self.uses_lsl = COMPATIBLE_BOARDS[defaultBoard][5]
-        self.adjustable_pga = COMPATIBLE_BOARDS[defaultBoard][6]
+        self.get_board_features(defaultBoard)
 
         labelBoard = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,
@@ -432,6 +447,11 @@ class Parameters:
         except AttributeError:
             pass
 
+        try:
+            self.data_type_val.set(value="EEG")
+        except AttributeError:
+            pass
+
 
     def select_board(self, event):
 
@@ -440,12 +460,9 @@ class Parameters:
 
         for _, board_name in enumerate(list(COMPATIBLE_BOARDS.keys())):
             if board_name == self.board:
-                self.select_channel_amount(COMPATIBLE_BOARDS[board_name][4])
-                self.predefine_sampling_rate(COMPATIBLE_BOARDS[board_name][1])
-                self.baud_rate = COMPATIBLE_BOARDS[board_name][2]
-                self.uses_lsl = COMPATIBLE_BOARDS[board_name][5]
-                self.adjustable_pga = COMPATIBLE_BOARDS[board_name][6]
-
+                self.get_board_features(board_name)
+                self.predefine_sampling_rate(self.sample_rate)
+                self.select_channel_amount(self.max_chans)
                 self.set_menu_states()
                 return
         raise Exception("Could not pre-define parameters for selected board")
@@ -524,6 +541,45 @@ class Parameters:
     #     print('Will send a \"{}\" to board'.format(self.firmfeedback))
 
 
+    def display_data_type(self, master):
+
+        labelDataType = customtkinter.CTkLabel(master=master, 
+                                            justify=customtkinter.LEFT,
+                                            text='Select data type to stream')
+        labelDataType.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
+        
+        data_type_vals = ["EEG", "PPG"]
+        self.data_type_val = tk.StringVar(value=data_type_vals[0], name=data_type_vals[0])
+
+        self.data_type_radio_buttons = []
+        for i in range(len(data_type_vals)):
+            self.data_type_radio_buttons.append(customtkinter.CTkRadioButton(master=master,
+                                              variable=self.data_type_val,
+                                              value=data_type_vals[i],
+                                              text=str(data_type_vals[i]),
+                                              command=self.select_data_type))
+            self.data_type_radio_buttons[i].pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
+
+
+    def select_data_type(self):
+        
+        if self.data_type_val.get() == "EEG" or (not self.secondary_max_chans or not self.secondary_sampling_rate):
+            if not self.secondary_max_chans or not self.secondary_sampling_rate:
+                print("Board does not allow for secondary data type. Board will stream main data type.")
+            self.streamed_data_type = "EEG"
+            self.max_chans = COMPATIBLE_BOARDS[self.board][4]
+            self.sample_rate = COMPATIBLE_BOARDS[self.board][1]
+            self.data_type_val.set(value="EEG")
+        elif self.data_type_val.get() == "PPG":
+            self.streamed_data_type = "PPG"
+            self.max_chans = COMPATIBLE_BOARDS[self.board][8]
+            self.sample_rate = COMPATIBLE_BOARDS[self.board][7]
+        
+        self.predefine_sampling_rate(self.sample_rate)
+        self.select_channel_amount(self.max_chans)
+        print('Board will send {} data'.format(self.streamed_data_type))
+
+
     def display_gains(self, master):
 
         gains = ['0', '1', '2', '4', '6', '8', '12', '24']
@@ -580,7 +636,7 @@ class Parameters:
         try:
             newSR = int(self.textSfr.get())
 
-            if newSR >= 100:
+            if newSR >= 100 or self.streamed_data_type != "EEG":
                 self.sample_rate = newSR
                 self.labelInfo.configure(text='Sampling rate set to {} Hz'.format(self.sample_rate),
                                         text_color='green')

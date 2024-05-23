@@ -17,26 +17,30 @@ class Processing():
         self.b_detrend, self.a_detrend          = butter(
             self.pm.filter_order, self.pm.frequency_bands["Whole"][0],
             btype='highpass', fs=self.pm.sample_rate)
-        self.b_wholerange, self.a_wholerange    = butter(
-            self.pm.filter_order, self.pm.frequency_bands["Whole"],
+        self.b_slow, self.a_slow                = butter(
+            self.pm.filter_order, self.pm.frequency_bands["Slow"],
             btype='bandpass', fs=self.pm.sample_rate)
-        self.b_sleep, self.a_sleep              = butter(
-            self.pm.filter_order, self.pm.frequency_bands["Sleep"],
-            btype='bandpass', fs=self.pm.sample_rate)
-        self.b_theta, self.a_theta              = butter(
-            self.pm.filter_order, self.pm.frequency_bands["Theta"],
-            btype='bandpass', fs=self.pm.sample_rate)
-        self.b_notch, self.a_notch              = butter(
-            self.pm.filter_order, self.pm.frequency_bands["LineNoise"],
-            btype='bandstop', fs=self.pm.sample_rate)
-        self.b_notch60, self.a_notch60          = butter(
-            self.pm.filter_order, self.pm.frequency_bands["LineNoise60"],
-            btype='bandstop', fs=self.pm.sample_rate)
+        
+        if self.pm.streamed_data_type == "EEG":
+            self.b_wholerange, self.a_wholerange    = butter(
+                self.pm.filter_order, self.pm.frequency_bands["Whole"],
+                btype='bandpass', fs=self.pm.sample_rate)
+            self.b_sleep, self.a_sleep              = butter(
+                self.pm.filter_order, self.pm.frequency_bands["Sleep"],
+                btype='bandpass', fs=self.pm.sample_rate)
+            self.b_theta, self.a_theta              = butter(
+                self.pm.filter_order, self.pm.frequency_bands["Theta"],
+                btype='bandpass', fs=self.pm.sample_rate)
+            self.b_notch, self.a_notch              = butter(
+                self.pm.filter_order, self.pm.frequency_bands["LineNoise"],
+                btype='bandstop', fs=self.pm.sample_rate)
+            self.b_notch60, self.a_notch60          = butter(
+                self.pm.filter_order, self.pm.frequency_bands["LineNoise60"],
+                btype='bandstop', fs=self.pm.sample_rate)
 
         # Determine padding length for signal filtering
         # -----------------------------------------------------------------
-        default_pad     = 3 * max(len(self.a_wholerange), 
-            len(self.b_wholerange))
+        default_pad     = 6 * max(len(self.a_detrend), len(self.b_detrend))
         if default_pad > self.pm.buffer_length * self.pm.sample_rate/10-1:
             self.padlen = int(default_pad) # Scipy expects int
         else:

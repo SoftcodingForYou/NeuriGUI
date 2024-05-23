@@ -68,6 +68,11 @@ class SamplingUtilsMuseSInteraxon():
         io_manager = IOManager(parameter)
         receiver_eeg, receiver_ppg = io_manager.set_up_lsl_entry_point()
 
+        if parameter["streamed_data_type"] == "EEG":
+            receiver = receiver_eeg
+        elif parameter["streamed_data_type"] == "PPG":
+            receiver = receiver_ppg
+
         # Prealloate values of loop ---------------------------------------
         start_time          = int(perf_counter() * 1000)
         time_stamp_now      = int(perf_counter() * 1000) # Do NOT copy from start_time (will generate pointer)
@@ -94,7 +99,7 @@ class SamplingUtilsMuseSInteraxon():
             # =========================================================
             # ========= B O A R D   S P E C I F I C   P A R T =========
             # =========================================================
-            raw_message_eeg        = receiver_eeg.pull_sample()
+            raw_message_eeg        = receiver.pull_sample()
 
             # TODO: Circumvent fact that PPG is sampled at 64 Hz and
             # slows down EEG sampling which is sending at 256 Hz.

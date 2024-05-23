@@ -26,6 +26,7 @@ class BoardAgnosticUtils():
             "udp_port":     parameter.udp_port, # Port of signal forwarding
             "set_customsession": parameter.set_customsession, # Whether or not to have a custom output file name (bool)
             "sessionName":  parameter.sessionName, # Custom file name for output (str)
+            "streamed_data_type": parameter.streamed_data_type, # Data type to stream (str)
         }
 
 

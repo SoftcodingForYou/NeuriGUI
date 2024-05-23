@@ -20,15 +20,57 @@ except: # Necessary if running as Python package
 COMPATIBLE_BOARDS = {
     # Unique name: [
     #   0: Start code (int),
-    #   1: Sampling rate (Hz),
+    #   1: Main sampling rate (EEG for most boards) (Hz),
     #   2: Baud rate (int),
     #   3: Board_specific class (object),
     #   4: Number of channels (int),
     #   5: Uses lab streaming layer LSL (bool),
     #   6: Possible to set PGA (bool),
+    #   7: Sampling rate of secondary data type applicable, ie PPG (int, None),
+    #   8: Amount of channels for secondary data type (ie PPG)
     # ]
-    "Neuri V1 by Helment":                  [2, 200, 115200, SamplingUtilsNeuriV1Helment, 2, False, True],
-    "Neuri-Lolin S3-PRO by Helment":        [2, 200, 115200, SamplingUtilsNeuriLolinHelment, 8, False, True],
-    "BioAmp EXG Pill by Upside Down Labs":  [None, 125, 115200, SamplingUtilsBioAmpUpsideDownLabs, 1, False, False],
-    "Muse S by InteraXon":                  [None, 256, None, SamplingUtilsMuseSInteraxon, 6, True, False]
+    "Neuri V1 by Helment": [
+        2,
+        200,
+        115200,
+        SamplingUtilsNeuriV1Helment,
+        2,
+        False,
+        True,
+        None,
+        None,
+    ],
+    "Neuri-Lolin S3-PRO by Helment": [
+        2,
+        200,
+        115200,
+        SamplingUtilsNeuriLolinHelment,
+        8,
+        False,
+        True,
+        None,
+        None,
+    ],
+    "BioAmp EXG Pill by Upside Down Labs": [
+        None,
+        125,
+        115200,
+        SamplingUtilsBioAmpUpsideDownLabs,
+        1,
+        False,
+        False,
+        None,
+        None,
+    ],
+    "Muse S by InteraXon": [
+        None,
+        256,
+        None,
+        SamplingUtilsMuseSInteraxon,
+        6,
+        True,
+        False,
+        64,
+        3,
+    ]
 }

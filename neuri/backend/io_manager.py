@@ -1,6 +1,8 @@
 import serial
+import socket
 from threading                          import Thread
 from datetime                           import datetime
+from pylsl                              import StreamInlet, resolve_stream
 
 class IOManager():
 
@@ -11,7 +13,7 @@ class IOManager():
         if parameter["set_customsession"]:
             file_name   = parameter["sessionName"] + '.txt'
         else:
-            file_name   = 'Neuri ' + t0 + '.txt'
+            file_name   = 'Neuri_' + t0 + '.txt'
 
         # Prepare data output
         self.output_file= file_name
@@ -40,6 +42,22 @@ class IOManager():
         ser.port       = port
         print('Ready to connect to board')
         return ser
+    
+
+    def set_up_lsl_entry_point(self):
+        streams_eeg = resolve_stream("type", "EEG")
+        inlet_eeg = StreamInlet(streams_eeg[0])
+        # streams_gyro = resolve_stream("type", "Gyro")
+        # inlet_gyro = StreamInlet(streams_gyro[0])
+        streams_ppg = resolve_stream("type", "PPG")
+        inlet_ppg = StreamInlet(streams_ppg[0])
+        return inlet_eeg, inlet_ppg
+    
+
+    def set_up_socket_entry_point(self, ip, port):
+        receiver_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        receiver_sock.bind((str(ip), int(port)))
+        return receiver_sock
     
 
     def master_write_data(self, eeg_data, time_stamps, saving_interval):

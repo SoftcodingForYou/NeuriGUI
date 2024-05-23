@@ -130,7 +130,6 @@ class SamplingUtilsTemplate():
                 sample              = buffer_in[:, 0]
 
                 for iSample in range(s_chans):
-                    sample[iSample]    = self.bin_to_voltage(sample[iSample], pga)
                     relay_array["".join(["c", str(iSample+1)])] = str(sample[iSample])
 
                 update_buffer       = concatenate((buffer, expand_dims(sample, 1)), axis=1)

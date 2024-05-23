@@ -229,6 +229,8 @@ class Parameters:
         self.port           = '' #Leave blank
         self.board          = '' #Leave blank
         self.start_code     = COMPATIBLE_BOARDS["Neuri V1 by Helment"][0]
+        self.uses_lsl       = COMPATIBLE_BOARDS["Neuri V1 by Helment"][5]
+        self.adjustable_pga = COMPATIBLE_BOARDS["Neuri V1 by Helment"][6]
         self.time_out       = None #Wait for message
 
         # Signal relay
@@ -328,7 +330,7 @@ class Parameters:
         frameVersion.pack(pady=0, padx=self.framePadX, fill=tk.X,
                           expand=False, side=tk.TOP)
 
-        repository = "davidmarcelbaum/NeuriGUI"
+        repository = "SoftcodingForYou/NeuriGUI"
 
         g = Github()
         
@@ -391,6 +393,9 @@ class Parameters:
         else:
             defaultBoard = self.board
 
+        self.uses_lsl = COMPATIBLE_BOARDS[defaultBoard][5]
+        self.adjustable_pga = COMPATIBLE_BOARDS[defaultBoard][6]
+
         labelBoard = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,
                                             text='Select board')
@@ -402,23 +407,48 @@ class Parameters:
         BoardMenu.set(defaultBoard)
 
 
+    def set_menu_states(self):
+
+        try:
+            if self.uses_lsl:
+                self.port   = "Lab Streaming Layer"
+                self.portMenu.set(self.port)
+                self.portMenu.configure(state="disabled")
+            else:
+                ports = [port.device for port in list(serial.tools.list_ports.comports())]
+                self.portMenu.set(ports[0]) if len(ports) > 0 else self.portMenu.set('No port available')
+                self.portMenu.configure(state="enabled")
+        except AttributeError:
+            pass
+
+        try:
+            if self.adjustable_pga:
+                self.gainMenu.set(self.PGA)
+                self.gainMenu.configure(state="enabled")
+            else:
+                self.PGA = 0
+                self.gainMenu.set(self.PGA)
+                self.gainMenu.configure(state="disabled")
+        except AttributeError:
+            pass
+
+
     def select_board(self, event):
 
         self.board       = str(event)
         print('Board set to {}'.format(self.board))
 
-        if self.board == "Neuri V1 by Helment":
-            self.select_channel_amount(2)
-            self.predefine_sampling_rate(200)
-            self.baud_rate = COMPATIBLE_BOARDS["Neuri V1 by Helment"][2]
-        elif self.board == "Neuri-Lolin S3-PRO by Helment":
-            self.select_channel_amount(8)
-            self.predefine_sampling_rate(200)
-            self.baud_rate = COMPATIBLE_BOARDS["Neuri-Lolin S3-PRO by Helment"][2]
-        elif self.board == "BioAmp EXG Pill by Upside Down Labs":
-            self.select_channel_amount(1)
-            self.predefine_sampling_rate(125)
-            self.baud_rate = COMPATIBLE_BOARDS["BioAmp EXG Pill by Upside Down Labs"][2]
+        for _, board_name in enumerate(list(COMPATIBLE_BOARDS.keys())):
+            if board_name == self.board:
+                self.select_channel_amount(COMPATIBLE_BOARDS[board_name][4])
+                self.predefine_sampling_rate(COMPATIBLE_BOARDS[board_name][1])
+                self.baud_rate = COMPATIBLE_BOARDS[board_name][2]
+                self.uses_lsl = COMPATIBLE_BOARDS[board_name][5]
+                self.adjustable_pga = COMPATIBLE_BOARDS[board_name][6]
+
+                self.set_menu_states()
+                return
+        raise Exception("Could not pre-define parameters for selected board")
 
 
     def display_ports(self, master):
@@ -427,9 +457,11 @@ class Parameters:
         if len(ports) == 0:
             defaultPort = 'No port available'
         else:
-            if self.port == '': 
+            if self.port == '' and not self.uses_lsl:
                 defaultPort = ports[0]
                 self.port   = defaultPort # If no change, select_port does not get triggered
+            elif self.uses_lsl:
+                defaultPort = "Lab Streaming Layer"
             else:
                 defaultPort = self.port
 
@@ -437,10 +469,12 @@ class Parameters:
                                             justify=customtkinter.LEFT,
                                             text='Select port')
         labelPort.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
-        portMenu = customtkinter.CTkOptionMenu(master, values=ports,
+        self.portMenu = customtkinter.CTkOptionMenu(master, values=ports,
                                                command=self.select_port)
-        portMenu.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
-        portMenu.set(defaultPort)
+        self.portMenu.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
+        self.portMenu.set(defaultPort)
+
+        self.set_menu_states()
 
         infoText = """
             You seem to use a GNU/Linux-based OS. Make sure you are part of
@@ -492,17 +526,19 @@ class Parameters:
 
     def display_gains(self, master):
 
-        gains = ['1', '2', '4', '6', '8', '12', '24']
+        gains = ['0', '1', '2', '4', '6', '8', '12', '24']
         idx_def = [i for i in range(len(gains)) if int(gains[i]) == self.PGA]
 
         labelGain = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,
                                             text='Select gain')
         labelGain.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT)
-        gainMenu = customtkinter.CTkOptionMenu(master, values=gains,
+        self.gainMenu = customtkinter.CTkOptionMenu(master, values=gains,
                                                     command=self.select_gain)
-        gainMenu.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
-        gainMenu.set(gains[int(idx_def[0])])
+        self.gainMenu.pack(pady=self.widgetPadY, padx=self.widgetPadX, side=tk.LEFT, expand=True)
+        self.gainMenu.set(gains[int(idx_def[0])])
+
+        self.set_menu_states()
 
 
     def select_gain(self, event):

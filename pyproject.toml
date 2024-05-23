@@ -34,7 +34,8 @@ dependencies = [
   "pyqtgraph",
   "pyserial",
   "requests",
-  "scipy"
+  "scipy",
+  "pylsl",
 ]
 
 [project.urls]

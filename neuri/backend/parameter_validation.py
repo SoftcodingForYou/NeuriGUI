@@ -25,7 +25,7 @@ class ParamVal():
         if len(p.sessionName) == 0:
             error_messages.append('You set a custom name for the session but there were no characters.')
         
-        if p.sample_rate < 100:
+        if p.sample_rate < 100 and p.streamed_data_type == "EEG":
             error_messages.append('Sampling rate too low. Set a rate of at least 100 Hz.')
 
         if len(p.port) == 0:

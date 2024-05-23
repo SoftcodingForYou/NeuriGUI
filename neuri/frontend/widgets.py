@@ -18,17 +18,25 @@ class GUIWidgets():
         self.numchans       = len(self.displ_chans)
         self.count          = 0
         self.yrange         = parameter.yrange
-        self.notch          = parameter.notch
         self.bpass          = parameter.bpass
         self.denv           = parameter.dispenv
 
         # Defaults
+        self.streamed_data_type = parameter.streamed_data_type
         self.streaming      = True
         self.envelope       = False
-        self.bSB            = processing.b_notch
-        self.aSB            = processing.a_notch
-        self.bPB            = processing.b_wholerange
-        self.aPB            = processing.a_wholerange
+        if self.streamed_data_type == "EEG":
+            self.notch      = parameter.notch
+            self.bSB        = processing.b_notch
+            self.aSB        = processing.a_notch
+            self.bPB        = processing.b_wholerange
+            self.aPB        = processing.a_wholerange
+        else:
+            self.notch      = 0
+            self.bSB        = array([None, None])
+            self.aSB        = array([None, None])
+            self.bPB        = processing.b_detrend
+            self.aPB        = processing.a_detrend
         self.lighttheme     = QtGui.QGuiApplication.palette()
         self.darktheme      = self.define_darktheme()
         self.darkmode       = parameter.darkmode
@@ -116,12 +124,24 @@ class GUIWidgets():
         rbtn2               = QtWidgets.QRadioButton('60')
         rbtn3               = QtWidgets.QRadioButton('Off')
 
-        if self.notch == 50:
-            rbtn1.setChecked(True)
-        elif self.notch == 60:
-            rbtn2.setChecked(True)
-        elif self.notch == 0:
+        if self.streamed_data_type != "EEG":
+            rbtn1.setChecked(False)
+            rbtn1.setDisabled(True)
+            rbtn1.setCheckable(False)
+            rbtn2.setChecked(False)
+            rbtn2.setDisabled(True)
+            rbtn2.setCheckable(False)
             rbtn3.setChecked(True)
+            self.notch == 0
+        else:
+            if self.notch == 50:
+                rbtn1.setChecked(True)
+            elif self.notch == 60:
+                rbtn2.setChecked(True)
+            elif self.notch == 0:
+                rbtn3.setChecked(True)
+
+        
 
         rbtn1.clicked.connect(lambda: self.filt_noise(50))
         rbtn2.clicked.connect(lambda: self.filt_noise(60))
@@ -151,23 +171,44 @@ class GUIWidgets():
         rbtn3               = QtWidgets.QRadioButton('0.5 - 45')
         rbtn4               = QtWidgets.QRadioButton('1 - 30')
         rbtn5               = QtWidgets.QRadioButton('4 - 8')
+        rbtn6               = QtWidgets.QRadioButton('0.1 - 6')
 
-        if self.bpass == -1:
-            rbtn1.setChecked(True)
-        elif self.bpass == 0:
-            rbtn2.setChecked(True)
-        elif self.bpass == 1:
-            rbtn3.setChecked(True)
-        elif self.bpass == 2:
-            rbtn4.setChecked(True)
-        elif self.bpass == 3:
-            rbtn5.setChecked(True)
+        if self.streamed_data_type == "EEG":
+            if self.bpass == -1:
+                rbtn1.setChecked(True)
+            elif self.bpass == 0:
+                rbtn2.setChecked(True)
+            elif self.bpass == 1:
+                rbtn3.setChecked(True)
+            elif self.bpass == 2:
+                rbtn4.setChecked(True)
+            elif self.bpass == 3:
+                rbtn5.setChecked(True)
+            elif self.bpass == 4:
+                rbtn6.setChecked(True)
+        else:
+            if self.bpass == -1:
+                rbtn1.setChecked(True)
+            elif self.bpass == 0:
+                rbtn2.setChecked(True)
+            elif self.bpass == 4:
+                rbtn6.setChecked(True)
+            rbtn3.setChecked(False)
+            rbtn3.setDisabled(True)
+            rbtn3.setCheckable(False)
+            rbtn4.setChecked(False)
+            rbtn4.setDisabled(True)
+            rbtn4.setCheckable(False)
+            rbtn5.setChecked(False)
+            rbtn5.setDisabled(True)
+            rbtn5.setCheckable(False)
 
         rbtn1.clicked.connect(lambda: self.filt_bandpass(-1))
         rbtn2.clicked.connect(lambda: self.filt_bandpass(0))
         rbtn3.clicked.connect(lambda: self.filt_bandpass(1))
         rbtn4.clicked.connect(lambda: self.filt_bandpass(2))
         rbtn5.clicked.connect(lambda: self.filt_bandpass(3))
+        rbtn6.clicked.connect(lambda: self.filt_bandpass(4))
 
         vertlayout.addWidget(title)
         vertlayout.addLayout(horilayout)
@@ -176,6 +217,7 @@ class GUIWidgets():
         horilayout.addWidget(rbtn3)
         horilayout.addWidget(rbtn4)
         horilayout.addWidget(rbtn5)
+        horilayout.addWidget(rbtn6)
         self.bandpass_filter.setLayout(vertlayout)
 
         return self.bandpass_filter
@@ -383,8 +425,10 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
         down_buffer = processed_buffer[:, idx_retain]
 
         # Set vertical range
-        v_buffer    = reshape(processed_buffer, processed_buffer.size)
-        if self.yrange[1] == 0:
+        if self.streaming == False:
+            vscale = self.signalgraph[0].getAxis("left").range
+        elif self.yrange[1] == 0:
+            v_buffer    = reshape(processed_buffer, processed_buffer.size)
             vscale = [
                 -max([abs(min(v_buffer)), abs(max(v_buffer))]),
                 max([abs(min(v_buffer)), abs(max(v_buffer))])]
@@ -461,7 +505,7 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             self.bPB        = self.proc.b_detrend
             self.aPB        = self.proc.a_detrend
         elif choice == 1:
-            print('Bandpass filter between 0.1 and 45 Hz')
+            print('Bandpass filter between 0.5 and 45 Hz')
             self.bPB        = self.proc.b_wholerange
             self.aPB        = self.proc.a_wholerange
         elif choice == 2:
@@ -472,6 +516,10 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             print('Bandpass filter between 4 and 8 Hz')
             self.bPB        = self.proc.b_theta
             self.aPB        = self.proc.a_theta
+        elif choice == 4:
+            print('Bandpass filter between 0.1 and 6 Hz')
+            self.bPB        = self.proc.b_slow
+            self.aPB        = self.proc.a_slow
 
 
     def yrange_selection(self, choice, title, custom_input):

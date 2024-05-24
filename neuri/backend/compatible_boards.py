@@ -19,15 +19,16 @@ except: # Necessary if running as Python package
 # Set None where parameter is not required
 COMPATIBLE_BOARDS = {
     # Unique name: [
-    #   0: Start code (int),
+    #   0: Start code (int or None),
     #   1: Main sampling rate (EEG for most boards) (Hz),
     #   2: Baud rate (int),
     #   3: Board_specific class (object),
     #   4: Number of channels (int),
     #   5: Uses lab streaming layer LSL (bool),
     #   6: Possible to set PGA (bool),
-    #   7: Sampling rate of secondary data type applicable, ie PPG (int, None),
-    #   8: Amount of channels for secondary data type (ie PPG)
+    #   7: Sampling rate of secondary data type applicable, ie PPG (int or None),
+    #   8: Amount of channels for secondary data type (ie PPG) (int or None),
+    #   9: Default Programmable Gain Amplitude (int or None)
     # ]
     "Neuri V1 by Helment": [
         2,
@@ -39,6 +40,7 @@ COMPATIBLE_BOARDS = {
         True,
         None,
         None,
+        24,
     ],
     "Neuri-Lolin S3-PRO by Helment": [
         2,
@@ -50,6 +52,7 @@ COMPATIBLE_BOARDS = {
         True,
         None,
         None,
+        24,
     ],
     "BioAmp EXG Pill by Upside Down Labs": [
         None,
@@ -59,6 +62,7 @@ COMPATIBLE_BOARDS = {
         1,
         False,
         False,
+        None,
         None,
         None,
     ],
@@ -72,5 +76,6 @@ COMPATIBLE_BOARDS = {
         False,
         64,
         3,
+        None,
     ]
 }

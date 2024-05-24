@@ -583,16 +583,11 @@ class Parameters:
 
     def display_gains(self, master):
 
-<<<<<<< Updated upstream
-        gains = ['0', '1', '2', '4', '6', '8', '12', '24']
-        idx_def = [i for i in range(len(gains)) if int(gains[i]) == self.PGA]
-=======
         gains = ['1', '2', '4', '6', '8', '12', '24']
         if not self.PGA:
             idx_def = [-1]
         else:
             idx_def = [i for i in range(len(gains)) if int(gains[i]) == self.PGA]
->>>>>>> Stashed changes
 
         labelGain = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,

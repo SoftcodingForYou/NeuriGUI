@@ -21,7 +21,7 @@ class Parameters:
         self.frontend_path  = os.path.dirname(__file__)
 
         self.conf_file      = os.path.join(".", "settings.cfg")
-        self.version        = '2.90.0' # TO-DO: Find a more elegant way to dynamically define the current version as this line here gets forgotten a lot
+        self.version        = '2.91.1' # TO-DO: Find a more elegant way to dynamically define the current version as this line here gets forgotten a lot
         self.ico_neuri      = os.path.join(self.frontend_path, "Neuri_logo.ico")
 
         self.set_defaults() # Necessary to execute first in case user 
@@ -583,8 +583,16 @@ class Parameters:
 
     def display_gains(self, master):
 
+<<<<<<< Updated upstream
         gains = ['0', '1', '2', '4', '6', '8', '12', '24']
         idx_def = [i for i in range(len(gains)) if int(gains[i]) == self.PGA]
+=======
+        gains = ['1', '2', '4', '6', '8', '12', '24']
+        if not self.PGA:
+            idx_def = [-1]
+        else:
+            idx_def = [i for i in range(len(gains)) if int(gains[i]) == self.PGA]
+>>>>>>> Stashed changes
 
         labelGain = customtkinter.CTkLabel(master=master, 
                                             justify=customtkinter.LEFT,

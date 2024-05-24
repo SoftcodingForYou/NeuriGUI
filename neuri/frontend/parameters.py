@@ -217,12 +217,12 @@ class Parameters:
 
         #Signal arrays
         self.sample_rate    = COMPATIBLE_BOARDS["Neuri V1 by Helment"][1] #Hertz
-        self.max_chans      = 8 #scalar (Max. amount of input channels of board)
+        self.max_chans      = COMPATIBLE_BOARDS["Neuri V1 by Helment"][4] #scalar (Max. amount of input channels of board)
         self.selected_chans = [True] * self.max_chans
         self.buffer_length  = 10 #scalar (seconds)
         self.buffer_add     = 4 #scalar (seconds), we add this to the buffer for filtering to avoid edge artifacts
         self.saving_interval= 1 #scalar (seconds)
-        self.PGA            = 24 #scalar
+        self.PGA            = COMPATIBLE_BOARDS["Neuri V1 by Helment"][9] #scalar
 
         #Signal reception
         self.baud_rate      = COMPATIBLE_BOARDS["Neuri V1 by Helment"][2] #scalar default baudrate for connection
@@ -252,7 +252,7 @@ class Parameters:
             'Sleep':        (1, 30),
             'Theta':        (4, 8),
             'Whole':        (0.5, 45),
-            'Slow':         (0.1, 6),
+            'Slow':         (0.5, 6),
         }
 
 
@@ -400,6 +400,7 @@ class Parameters:
         self.adjustable_pga = COMPATIBLE_BOARDS[board_name][6]
         self.secondary_sampling_rate = COMPATIBLE_BOARDS[board_name][7]
         self.secondary_max_chans = COMPATIBLE_BOARDS[board_name][8]
+        self.PGA = COMPATIBLE_BOARDS[board_name][9]
 
     
     def display_board_version(self, master):
@@ -432,8 +433,12 @@ class Parameters:
                 self.portMenu.configure(state="disabled")
             else:
                 ports = [port.device for port in list(serial.tools.list_ports.comports())]
-                self.portMenu.set(ports[0]) if len(ports) > 0 else self.portMenu.set('No port available')
-                self.portMenu.configure(state="enabled")
+                if self.port != "":
+                    self.portMenu.set(self.port) if len(ports) > 0 else self.portMenu.set('No port available')
+                    self.portMenu.configure(state="enabled")
+                else:
+                    self.portMenu.set(ports[0]) if len(ports) > 0 else self.portMenu.set('No port available')
+                    self.portMenu.configure(state="enabled")
         except AttributeError:
             pass
 
@@ -442,8 +447,6 @@ class Parameters:
                 self.gainMenu.set(self.PGA)
                 self.gainMenu.configure(state="enabled")
             else:
-                self.PGA = 0
-                self.gainMenu.set(self.PGA)
                 self.gainMenu.configure(state="disabled")
         except AttributeError:
             pass

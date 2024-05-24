@@ -171,7 +171,7 @@ class GUIWidgets():
         rbtn3               = QtWidgets.QRadioButton('0.5 - 45')
         rbtn4               = QtWidgets.QRadioButton('1 - 30')
         rbtn5               = QtWidgets.QRadioButton('4 - 8')
-        rbtn6               = QtWidgets.QRadioButton('0.1 - 6')
+        rbtn6               = QtWidgets.QRadioButton('0.5 - 6')
 
         if self.streamed_data_type == "EEG":
             if self.bpass == -1:
@@ -517,7 +517,7 @@ The raw data is available at {}:{}""".format(udp_ip, udp_port))
             self.bPB        = self.proc.b_theta
             self.aPB        = self.proc.a_theta
         elif choice == 4:
-            print('Bandpass filter between 0.1 and 6 Hz')
+            print('Bandpass filter between 0.5 and 6 Hz')
             self.bPB        = self.proc.b_slow
             self.aPB        = self.proc.a_slow
 

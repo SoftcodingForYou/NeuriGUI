@@ -15,9 +15,10 @@ Watch the introduction on Youtube:
 
 ## Compatible devices
 
+- BioAmp EXG Pill by Upside Down Labs
+- Muse S by InteraXon Inc.
 - Neuri 1.x by Helment
 - Neuri-Lolin S3-PRO by Helment
-- BioAmp EXG Pill by Upside Down Labs 
 
 ## Setup
 

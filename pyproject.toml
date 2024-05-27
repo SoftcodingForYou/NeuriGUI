@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "neurigui"
-version = "2.91.1"
+version = "2.91.2"
 authors = [
   { name="David Marcel BAUM" },
   { email="contact@davidbaum.org" },

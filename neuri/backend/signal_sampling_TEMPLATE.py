@@ -103,6 +103,7 @@ class SamplingUtilsTemplate():
                 # =========================================================
                 # ========= B O A R D   S P E C I F I C   P A R T =========
                 # =========================================================
+                # TODO: Adapt recevier function to read incoming data from board
                 raw_message             = str(r.readline())
 
                 # TODO: Adapt message_to_samples() in order to convert

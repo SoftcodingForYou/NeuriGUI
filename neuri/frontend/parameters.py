@@ -396,6 +396,7 @@ class Parameters:
         self.sample_rate = COMPATIBLE_BOARDS[board_name][1]
         self.baud_rate = COMPATIBLE_BOARDS[board_name][2]
         self.max_chans = COMPATIBLE_BOARDS[board_name][4]
+        self.selected_chans = [True] * self.max_chans
         self.uses_lsl = COMPATIBLE_BOARDS[board_name][5]
         self.adjustable_pga = COMPATIBLE_BOARDS[board_name][6]
         self.secondary_sampling_rate = COMPATIBLE_BOARDS[board_name][7]

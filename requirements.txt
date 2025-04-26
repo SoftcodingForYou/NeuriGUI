@@ -9,3 +9,4 @@ pyqtgraph
 pyserial
 requests
 scipy
+pylsl

@@ -25,7 +25,19 @@ Watch the introduction on Youtube:
 
 ## Setup
 
-The GUI is distributed as a Python program. The GUI should work with **Python versions 3.9 or higher**.
+The GUI is distributed as a Python module and works with **Python versions 3.9 or higher**.
+
+### Installing and running
+
+The easiest way of setting up your environment is to install NeuriGUI via PiPy: `pip install neurigui`. You can then run it as follows:
+```
+import neuri.gui as ng
+ng.Run()
+```
+
+The GUI can be run directly from an IDE by calling the `Run()` function found in "./neuri/gui.py".
+
+> **ℹ️ Info:** Note that your settings are stored in a "settings.cfg" file inside the current workspace directory of the IDE or terminal.
 
 ### Preparing Python libraries
 
@@ -53,17 +65,6 @@ The compiled version the the Neuri GUI runs way faster and has more stable  exec
 The GUI is packageable into a **Python module**. For this, run inside the root folder (NeuriGUI) of the project:
 - Windows: `python -m build`
 - GNU/Linux: `python3 -m build`
-
-### Installing and running
-
-The GUI can be run directly from an IDE by calling the `Run()` function found in "./neuri/gui.py".
-You can also **install it as a Python module** pointing pip to the root folder of the project (NeuriGUI): `pip install ./path/to/NeuriGUI`. This will install the module found in "NeuriGUI/dist". You can then run the GUI from your own scripts such as:
-```
-import neuri.gui as ng
-ng.Run()
-```
-
-Note that your settings are stored in a "settings.cfg" file inside the current workspace directory of the IDE or terminal.
 
 ## Troubleshooting
 

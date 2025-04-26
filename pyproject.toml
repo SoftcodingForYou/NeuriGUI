@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "neurigui"
-version = "2.91.2"
+version = "2.91.4"
 authors = [
   { name="David Marcel BAUM" },
   { email="david.marcel.baum@gmail.com" },
@@ -25,7 +25,7 @@ classifiers = [
 license = {file = "LICENSE"}
 dependencies = [
   "setuptools",
-  "customtkinter==5.2.0",
+  "customtkinter",
   "numpy",
   "oauthlib",
   "Pillow",

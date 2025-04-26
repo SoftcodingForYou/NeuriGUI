@@ -16,9 +16,12 @@ Watch the introduction on Youtube:
 ## Compatible devices
 
 - BioAmp EXG Pill by Upside Down Labs
-- Muse S by InteraXon Inc.
+- Muse S 2nd Gen by InteraXon Inc. (see statement below)
 - Neuri 1.x by Helment
 - Neuri-Lolin S3-PRO by Helment
+
+
+> ⚠️ **Warning:** Muse devices are best to be used with InteraXon Inc.'s own software packages such as Muse Lab, Muse Direct and the Muse mobile app. They have been refined and optimized over years and you will have a better time using those over the NeuriGUI!
 
 ## Setup
 

@@ -1,5 +1,5 @@
 setuptools
-customtkinter==5.2.0
+customtkinter
 numpy
 oauthlib
 Pillow

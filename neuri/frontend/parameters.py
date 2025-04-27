@@ -21,7 +21,7 @@ class Parameters:
         self.frontend_path  = os.path.dirname(__file__)
 
         self.conf_file      = os.path.join(".", "settings.cfg")
-        self.version        = '2.91.4' # TO-DO: Find a more elegant way to dynamically define the current version as this line here gets forgotten a lot
+        self.version        = '2.91.5' # TO-DO: Find a more elegant way to dynamically define the current version as this line here gets forgotten a lot
         self.ico_neuri      = os.path.join(self.frontend_path, "Neuri_logo.ico")
 
         self.set_defaults() # Necessary to execute first in case user 
@@ -267,10 +267,12 @@ class Parameters:
         # -----------------------------------------------------------------
         self.paramWin           = customtkinter.CTk()
         pixels_x, pixels_y      = int(
-            round(0.8*self.screen_width)), int(round(0.9*self.screen_height))
-        x_cordinate, y_cordinate= int((self.screen_width/2) - (pixels_x/2)), int(0)
+            round(0.8*self.screen_width)), int(round(0.8*self.screen_height))
+        x_cordinate = int((self.screen_width/2) - (pixels_x/2))
+        y_cordinate = int((self.screen_height/2) - (pixels_y/2))
         self.paramWin.geometry("{}x{}+{}+{}".format(
             pixels_x, pixels_y, x_cordinate, y_cordinate))
+        self.paramWin._set_scaling(1, 1)
 
         if self.darkmode:
             customtkinter.set_appearance_mode("dark")

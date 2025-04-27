@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "neurigui"
-version = "2.91.2"
+version = "2.91.4"
 authors = [
   { name="David Marcel BAUM" },
-  { email="contact@davidbaum.org" },
+  { email="david.marcel.baum@gmail.com" },
 ]
 maintainers = [
   { name="SoftcodingForYou" },
-  { email="contact@davidbaum.org" },
+  { email="david.marcel.baum@gmail.com" },
 ]
 description = "NeuriGUI is a modular, cross-platform and FOSS app for exploring electrophysiological signals in real-time"
 keywords = ["eeg", "visualization", "digital signal processing", "DSP", "neuroscience", "electrophysiology", "real-time"]
@@ -25,7 +25,7 @@ classifiers = [
 license = {file = "LICENSE"}
 dependencies = [
   "setuptools",
-  "customtkinter==5.2.0",
+  "customtkinter",
   "numpy",
   "oauthlib",
   "Pillow",

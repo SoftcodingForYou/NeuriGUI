@@ -8,7 +8,7 @@ between frontend and backend.
 
 
 from json import dumps
-from time import sleep, perf_counter
+from time import time
 from numpy import expand_dims, concatenate, append, array, zeros, reshape
 try:
     from io_manager import IOManager
@@ -74,9 +74,9 @@ class SamplingUtilsMuseSInteraxon():
             receiver = receiver_ppg
 
         # Prealloate values of loop ---------------------------------------
-        start_time          = int(perf_counter() * 1000)
-        time_stamp_now      = int(perf_counter() * 1000) # Do NOT copy from start_time (will generate pointer)
-        time_reset          = int(perf_counter() * 1000) # Do NOT copy from start_time (will generate pointer)
+        start_time          = int(time() * 1000)
+        time_stamp_now      = int(time() * 1000) # Do NOT copy from start_time (will generate pointer)
+        time_reset          = int(time() * 1000) # Do NOT copy from start_time (will generate pointer)
         sample_count        = int(0)
         
         buffer              = zeros((parameter["max_chans"],
@@ -120,7 +120,7 @@ class SamplingUtilsMuseSInteraxon():
             # require any additional changes from here
 
             # Current timestamp -------------------------------------------
-            time_stamp_now          = int(perf_counter() * 1000) - start_time
+            time_stamp_now          = int(raw_message_eeg[1] / 1000) - start_time
             # This will generate unchanged time_stamps for all samples of 
             # the incoming buffer (= 10 in case of bluetooth), but that is
             # not a problem

@@ -2,7 +2,12 @@ import serial
 import socket
 from threading                          import Thread
 from datetime                           import datetime
-from pylsl                              import StreamInlet, resolve_stream
+from pylsl                              import StreamInlet
+try:
+    from pylsl                          import resolve_stream
+except ImportError:
+    from pylsl.resolve                  import resolve_stream
+
 
 class IOManager():
 

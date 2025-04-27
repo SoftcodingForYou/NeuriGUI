@@ -21,7 +21,7 @@ class Parameters:
         self.frontend_path  = os.path.dirname(__file__)
 
         self.conf_file      = os.path.join(".", "settings.cfg")
-        self.version        = '2.91.1' # TO-DO: Find a more elegant way to dynamically define the current version as this line here gets forgotten a lot
+        self.version        = '2.91.4' # TO-DO: Find a more elegant way to dynamically define the current version as this line here gets forgotten a lot
         self.ico_neuri      = os.path.join(self.frontend_path, "Neuri_logo.ico")
 
         self.set_defaults() # Necessary to execute first in case user 
